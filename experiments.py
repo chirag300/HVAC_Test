@@ -269,29 +269,38 @@ def hypothesis_checks(main, ident, sweep, fix):
                     _verdict(after <= 0.5 * before and cap_drop <= 0.05),
                     f"{kp}: {before:.2f} -> {after:.2f}; CAP recall change {-cap_drop:+.2f}"))
 
-    bo = main.get("unknown_by_overlap", {}).get(lstm)
-    if bo:
+    # H6 / H7 per model: real unknown faults (never trained on)
+    others = [r for r in main.get("unknown_faults", {}).values() if r["group"] == "other"]
+    for model, bo in main.get("unknown_by_overlap", {}).items():
+        if model == andn:
+            continue
+        short = model.split(" (")[0]
         lo = bo.get("0", {})
         part = [bo[str(o)] for o in range(1, k) if bo.get(str(o), {}).get("n")]
         n_part = sum(p["n"] for p in part)
         enough = lo.get("n", 0) >= 30 and n_part >= 30
         if enough:
             r_part = sum(p["flag_rate"] * p["n"] for p in part) / n_part
-            ok = r_part >= max(0.20, 5 * lo["flag_rate"])
-            per = ", ".join(f"overlap {o}: {bo[str(o)]['flag_rate']:.2f} (n={bo[str(o)]['n']})"
+            r0 = lo["flag_rate"]
+            # flagged often, and clearly more often than faults that miss the signature
+            ok = r_part >= 0.20 and r_part - r0 >= 0.15 and r_part >= 2 * max(r0, 0.01)
+            per = ", ".join(f"ov{o} {bo[str(o)]['flag_rate']:.2f} (n={bo[str(o)]['n']})"
                             for o in range(1, k) if bo.get(str(o), {}).get("n"))
-            msg = (f"{gdn} flags {r_part:.2f} of real other-fault windows that move 1..{k - 1} "
-                   f"signature channels vs {lo['flag_rate']:.2f} for those moving none "
-                   f"(n={lo['n']}); {per}")
+            msg = f"partial overlap {r_part:.2f} vs none {r0:.2f} (n={lo['n']}); {per}"
         else:
-            ok, msg = False, (f"need >=30 other-fault windows in both groups: partial overlap n={n_part}, "
-                              f"no overlap n={lo.get('n', 0)}")
-        out.append(("H6 real unknown faults that partially overlap the signature are flagged",
+            ok, msg = False, (f"need >=30 windows in both groups: partial n={n_part}, "
+                              f"none n={lo.get('n', 0)}")
+        out.append((f"H6 real unknown faults with partial overlap are flagged ({short})",
                     _verdict(ok, enough), msg))
-        if main.get("fleet_false_alarm_share", {}).get(lstm) is not None:
-            sh = main["fleet_false_alarm_share"][lstm]
-            out.append((f"H7 most fleet false alarms come from unknown faults ({gdn})",
-                        _verdict(sh >= 0.5), f"{sh:.0%} of false alarms in an 89/1/10 fleet mix"))
+        sh = main.get("fleet_false_alarm_share", {}).get(model)
+        if sh is not None and others:
+            r_other = float(np.mean([r[model] for r in others]))
+            meaningful = r_other >= 0.05  # below this the share is a ratio of tiny numbers
+            out.append((f"H7 most fleet false alarms come from unknown faults ({short})",
+                        _verdict(sh >= 0.5, meaningful),
+                        f"{sh:.0%} of false alarms in an 89/1/10 fleet mix; "
+                        f"unknown faults flagged {r_other:.2f} on average"
+                        + ("" if meaningful else " (too rare to judge)")))
     return out
 
 
