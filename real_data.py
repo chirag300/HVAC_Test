@@ -237,6 +237,11 @@ class LBNLSource:
                                if c not in self.sig},
         }
         log(f"  target: {target}; signature: {self.sig_info['signature']}")
+        if target in self._fallback:
+            log("  ! signature is a FALLBACK: fewer than 2 channels passed --min-dev after skipping "
+                "near-duplicates (|corr| > --dedup-corr). It includes weak or duplicate channels. "
+                "Consider --min-dev lower, --dedup-corr 1.0, or another --target.")
+        self.sig_info["strict_signature"] = target not in self._fallback
 
     # ----------------------------------------------------------------- helpers
     def _drop_baseline_mismatch(self, frac_thr):
@@ -296,8 +301,11 @@ class LBNLSource:
             if sel and np.abs(self.corr[c, sel]).max() > self.dedup_corr:
                 continue
             sel.append(int(c))
-        if len(sel) < 2:  # fall back to top channels even if weak
+        strict = len(sel) >= 2
+        if not strict:  # fall back to top channels even if weak or near-duplicate
             sel = [int(c) for c in np.argsort(-np.abs(d))[:max(2, k)]]
+        self._fallback = getattr(self, "_fallback", set())
+        (self._fallback.discard if strict else self._fallback.add)(f)
         return sel, np.sign(d[sel]).astype(int)
 
     def _rank_targets(self):
@@ -324,8 +332,10 @@ class LBNLSource:
                          "qualify_rate": round(frac, 3),
                          "est_train_windows": int(frac * n_starts * (self.onset[1] - self.onset[0] + 1)),
                          "families_with_partial_overlap": partial,
+                         "strict_signature": f not in self._fallback,
                          "active_frac": round(self.profiles[f]["active_frac"], 3)})
-        rows.sort(key=lambda r: (-(r["est_train_windows"] >= self.min_target_windows), -(r["k"] == self.k_req),
+        rows.sort(key=lambda r: (-(r["est_train_windows"] >= self.min_target_windows), -r["strict_signature"],
+                                 -(r["k"] == self.k_req),
                                  -r["families_with_partial_overlap"], -r["qualify_rate"]))
         return rows
 
@@ -461,7 +471,8 @@ class LBNLSource:
         lines = ["Top target candidates (more partial-overlap families = closer to the slide's "
                  "'other faults look like part of the capacitor pattern' assumption):"]
         for r in self.ranking[:15]:
+            fb = "" if r["strict_signature"] else "  [fallback signature]"
             lines.append(f"  {r['fault'][:45]:45s} k={r['k']} partial-overlap families="
                          f"{r['families_with_partial_overlap']:2d} qualify={r['qualify_rate']:.3f} "
-                         f"~{r['est_train_windows']} windows  sig={r['signature']}")
+                         f"~{r['est_train_windows']} windows  sig={r['signature']}{fb}")
         return "\n".join(lines)
