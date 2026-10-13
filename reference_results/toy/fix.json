@@ -1,0 +1,245 @@
+{
+  "rates": {
+    "LogReg (stats)": {
+      "NORMAL": 0.018,
+      "CAP": 0.9565,
+      "P1": 0.1565,
+      "P2": 0.6355,
+      "BIG1": 0.8785,
+      "ASYNC": 0.1805,
+      "ASYNC2": 0.094,
+      "UP": 0.0,
+      "OFF": 0.0115,
+      "ONLY:ch0": 0.1445,
+      "ONLY:ch1": 0.1355,
+      "ONLY:ch2": 0.1605
+    },
+    "Random forest (stats)": {
+      "NORMAL": 0.0095,
+      "CAP": 0.8685,
+      "P1": 0.0255,
+      "P2": 0.167,
+      "BIG1": 0.0375,
+      "ASYNC": 0.2195,
+      "ASYNC2": 0.0915,
+      "UP": 0.0,
+      "OFF": 0.0085,
+      "ONLY:ch0": 0.025,
+      "ONLY:ch1": 0.0335,
+      "ONLY:ch2": 0.0345
+    },
+    "Grad. boosting (stats)": {
+      "NORMAL": 0.0135,
+      "CAP": 0.9245,
+      "P1": 0.0325,
+      "P2": 0.2095,
+      "BIG1": 0.021,
+      "ASYNC": 0.374,
+      "ASYNC2": 0.168,
+      "UP": 0.0,
+      "OFF": 0.0105,
+      "ONLY:ch0": 0.0325,
+      "ONLY:ch1": 0.0395,
+      "ONLY:ch2": 0.0415
+    },
+    "MLP (raw series)": {
+      "NORMAL": 0.0135,
+      "CAP": 0.8665,
+      "P1": 0.055,
+      "P2": 0.2795,
+      "BIG1": 0.022,
+      "ASYNC": 0.1045,
+      "ASYNC2": 0.0515,
+      "UP": 0.0,
+      "OFF": 0.0055,
+      "ONLY:ch0": 0.0475,
+      "ONLY:ch1": 0.047,
+      "ONLY:ch2": 0.058
+    },
+    "LSTM (raw series)": {
+      "NORMAL": 0.0125,
+      "CAP": 0.838,
+      "P1": 0.0305,
+      "P2": 0.151,
+      "BIG1": 0.0035,
+      "ASYNC": 0.0295,
+      "ASYNC2": 0.0205,
+      "UP": 0.0,
+      "OFF": 0.005,
+      "ONLY:ch0": 0.029,
+      "ONLY:ch1": 0.0225,
+      "ONLY:ch2": 0.0365
+    }
+  },
+  "unknown_faults": {
+    "toy:P1": {
+      "group": "other",
+      "n": 1000,
+      "mean_overlap": 1.0,
+      "frac_full_match": 0.0,
+      "LogReg (stats)": 0.157,
+      "Random forest (stats)": 0.032,
+      "Grad. boosting (stats)": 0.042,
+      "MLP (raw series)": 0.051,
+      "LSTM (raw series)": 0.036
+    },
+    "toy:P2": {
+      "group": "other",
+      "n": 1000,
+      "mean_overlap": 2.0,
+      "frac_full_match": 0.0,
+      "LogReg (stats)": 0.619,
+      "Random forest (stats)": 0.154,
+      "Grad. boosting (stats)": 0.196,
+      "MLP (raw series)": 0.248,
+      "LSTM (raw series)": 0.143
+    },
+    "toy:BIG1": {
+      "group": "other",
+      "n": 1000,
+      "mean_overlap": 1.0,
+      "frac_full_match": 0.0,
+      "LogReg (stats)": 0.879,
+      "Random forest (stats)": 0.028,
+      "Grad. boosting (stats)": 0.019,
+      "MLP (raw series)": 0.016,
+      "LSTM (raw series)": 0.002
+    },
+    "toy:ASYNC": {
+      "group": "other",
+      "n": 1000,
+      "mean_overlap": 3.0,
+      "frac_full_match": 1.0,
+      "LogReg (stats)": 0.194,
+      "Random forest (stats)": 0.233,
+      "Grad. boosting (stats)": 0.365,
+      "MLP (raw series)": 0.111,
+      "LSTM (raw series)": 0.034
+    },
+    "toy:ASYNC2": {
+      "group": "other",
+      "n": 1000,
+      "mean_overlap": 3.0,
+      "frac_full_match": 1.0,
+      "LogReg (stats)": 0.086,
+      "Random forest (stats)": 0.075,
+      "Grad. boosting (stats)": 0.169,
+      "MLP (raw series)": 0.044,
+      "LSTM (raw series)": 0.024
+    },
+    "toy:UP": {
+      "group": "other",
+      "n": 1000,
+      "mean_overlap": 0.0,
+      "frac_full_match": 0.0,
+      "LogReg (stats)": 0.0,
+      "Random forest (stats)": 0.0,
+      "Grad. boosting (stats)": 0.0,
+      "MLP (raw series)": 0.0,
+      "LSTM (raw series)": 0.0
+    },
+    "toy:OFF": {
+      "group": "other",
+      "n": 1000,
+      "mean_overlap": 0.0,
+      "frac_full_match": 0.0,
+      "LogReg (stats)": 0.014,
+      "Random forest (stats)": 0.012,
+      "Grad. boosting (stats)": 0.014,
+      "MLP (raw series)": 0.003,
+      "LSTM (raw series)": 0.005
+    }
+  },
+  "unknown_by_overlap": {
+    "LogReg (stats)": {
+      "0": {
+        "flag_rate": 0.007,
+        "n": 2000
+      },
+      "1": {
+        "flag_rate": 0.518,
+        "n": 2000
+      },
+      "2": {
+        "flag_rate": 0.619,
+        "n": 1000
+      },
+      "3": {
+        "flag_rate": 0.14,
+        "n": 2000
+      }
+    },
+    "Random forest (stats)": {
+      "0": {
+        "flag_rate": 0.006,
+        "n": 2000
+      },
+      "1": {
+        "flag_rate": 0.03,
+        "n": 2000
+      },
+      "2": {
+        "flag_rate": 0.154,
+        "n": 1000
+      },
+      "3": {
+        "flag_rate": 0.154,
+        "n": 2000
+      }
+    },
+    "Grad. boosting (stats)": {
+      "0": {
+        "flag_rate": 0.007,
+        "n": 2000
+      },
+      "1": {
+        "flag_rate": 0.0305,
+        "n": 2000
+      },
+      "2": {
+        "flag_rate": 0.196,
+        "n": 1000
+      },
+      "3": {
+        "flag_rate": 0.267,
+        "n": 2000
+      }
+    },
+    "MLP (raw series)": {
+      "0": {
+        "flag_rate": 0.0015,
+        "n": 2000
+      },
+      "1": {
+        "flag_rate": 0.0335,
+        "n": 2000
+      },
+      "2": {
+        "flag_rate": 0.248,
+        "n": 1000
+      },
+      "3": {
+        "flag_rate": 0.0775,
+        "n": 2000
+      }
+    },
+    "LSTM (raw series)": {
+      "0": {
+        "flag_rate": 0.0025,
+        "n": 2000
+      },
+      "1": {
+        "flag_rate": 0.019,
+        "n": 2000
+      },
+      "2": {
+        "flag_rate": 0.143,
+        "n": 1000
+      },
+      "3": {
+        "flag_rate": 0.029,
+        "n": 2000
+      }
+    }
+  }
+}

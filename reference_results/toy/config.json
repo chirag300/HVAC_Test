@@ -1,0 +1,27 @@
+{
+  "n_train": 4000,
+  "n_val": 2000,
+  "n_test": 2000,
+  "n_other": 1000,
+  "seed": 0,
+  "force": false,
+  "models": [
+    "LogReg (stats)",
+    "Random forest (stats)",
+    "Grad. boosting (stats)",
+    "MLP (raw series)",
+    "LSTM (raw series)"
+  ],
+  "sweep_sizes": [
+    500,
+    2000,
+    8000,
+    20000
+  ],
+  "sweep_prev": [
+    0.1,
+    0.5,
+    0.9
+  ],
+  "nonsig": "normal"
+}

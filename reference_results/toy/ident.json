@@ -1,0 +1,10 @@
+{
+  "ch0 only": 0.90575,
+  "ch1 only": 0.91625,
+  "ch2 only": 0.909,
+  "all sig but ch0": 0.9525,
+  "all sig but ch1": 0.9512499999999999,
+  "all sig but ch2": 0.9497500000000001,
+  "all signature channels": 0.9664999999999999,
+  "all 20 channels": 0.98225
+}
