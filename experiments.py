@@ -31,7 +31,17 @@ import shortcut_lib as L
 
 EXTRA_KINDS = ["BIG1", "ASYNC", "ASYNC2", "UP", "OFF"]
 GD_MODELS = ["MLP (raw series)", "LSTM (raw series)"]
-SWEEP_MODELS = ["LogReg (stats)", "Grad. boosting (stats)", "MLP (raw series)", "LSTM (raw series)"]
+SWEEP_MODELS = ["LogReg (stats)", "Grad. boosting (stats)", "MLP (raw series)", "LSTM (raw series)",
+                "Channel-indep. (raw series)"]
+CI = "Channel-indep. (raw series)"
+# targeted-negative variants: name -> [(construct kind, fraction of n_train added as label 0)]
+FIX_VARIANTS = {
+    "fix": [("ALLBUT1", 0.5)],                                   # channel identifiability
+    "fixtime": [("ASYNC", 0.25), ("ASYNC2", 0.25)],              # time identifiability
+    "fixboth": [("ALLBUT1", 0.25), ("ASYNC", 0.125), ("ASYNC2", 0.125)],
+}
+FIX_LABEL = {"fix": "all-but-one (channel) negatives", "fixtime": "staggered (time) negatives",
+             "fixboth": "all-but-one + staggered negatives"}
 
 
 def _log(msg):
@@ -50,13 +60,17 @@ def _load(path):
         return json.load(f)
 
 
-def make_train(src, n, prev, rng, extra_kind=None, n_extra=0):
+def make_train(src, n, prev, rng, extra_kind=None, n_extra=0, extras=None):
+    """extras: list of (construct kind, count) added as label-0 targeted negatives."""
     n_pos = int(round(n * prev))
     Xp = src.construct("train", "CAP", n_pos, rng)
     Xn = src.train_negatives(n - n_pos, rng)
     parts, ys = [Xp, Xn], [np.ones(len(Xp)), np.zeros(len(Xn))]
-    if extra_kind:
-        Xe = src.construct("train", extra_kind, n_extra, rng)
+    extras = list(extras or []) + ([(extra_kind, n_extra)] if extra_kind else [])
+    for kind, cnt in extras:
+        if cnt <= 0:
+            continue
+        Xe = src.construct("train", kind, cnt, rng)
         parts.append(Xe)
         ys.append(np.zeros(len(Xe)))
     X = np.concatenate(parts)
@@ -195,15 +209,16 @@ def step_sweep(src, cfg, out):
     return res
 
 
-def step_fix(src, cfg, out):
-    path = os.path.join(out, "fix.json")
+def step_fix(src, cfg, out, name="fix"):
+    path = os.path.join(out, f"{name}.json")
     if os.path.exists(path) and not cfg["force"]:
-        _log("fix: cached")
+        _log(f"{name}: cached")
         return _load(path)
     rng = np.random.default_rng(cfg["seed"] + 3)
     n = cfg["n_train"]
-    _log("fix: training with all-but-one negatives")
-    Xtr, ytr = make_train(src, n, 0.5, rng, extra_kind="ALLBUT1", n_extra=n // 2)
+    _log(f"{name}: training with {FIX_LABEL[name]}")
+    extras = [(kind, int(frac * n)) for kind, frac in FIX_VARIANTS[name]]
+    Xtr, ytr = make_train(src, n, 0.5, rng, extras=extras)
     Xval = src.normal("val", cfg["n_val"], rng)
     dets = list(L.fit_detectors(Xtr, ytr, Xval, cfg["models"], cfg["seed"], log=_log).values())
     tests = construct_tests(src, "test", cfg["n_test"], np.random.default_rng(cfg["seed"]))
@@ -222,7 +237,7 @@ def _verdict(ok, n_ok=True):
     return "SUPPORTED" if ok else "NOT SUPPORTED"
 
 
-def hypothesis_checks(main, ident, sweep, fix):
+def hypothesis_checks(main, ident, sweep, fix, fixes=None):
     k = main["k"]
     kp = f"P{k - 1}"
     R = main["rates"]
@@ -269,6 +284,34 @@ def hypothesis_checks(main, ident, sweep, fix):
                     _verdict(after <= 0.5 * before and cap_drop <= 0.05),
                     f"{kp}: {before:.2f} -> {after:.2f}; CAP recall change {-cap_drop:+.2f}"))
 
+    fixes = fixes or {}
+    time_cols = [c for c in ("ASYNC", "ASYNC2") if c in R.get(lstm, {})]
+    ft = fixes.get("fixtime")
+    if ft and lstm in ft["rates"] and lstm in R and time_cols:
+        b = float(np.mean([R[lstm][c] for c in time_cols]))
+        a = float(np.mean([ft["rates"][lstm][c] for c in time_cols]))
+        cap_drop = R[lstm]["CAP"] - ft["rates"][lstm]["CAP"]
+        out.append((f"H5t staggered (time) negatives fix simultaneity ({gdn})",
+                    _verdict(a <= 0.5 * b and cap_drop <= 0.05, b >= 0.10),
+                    f"ASYNC/ASYNC2 mean {b:.2f} -> {a:.2f}; {kp} {R[lstm][kp]:.2f} -> "
+                    f"{ft['rates'][lstm][kp]:.2f} (time negatives alone should not fix it); "
+                    f"CAP change {-cap_drop:+.2f}"))
+    fb = fixes.get("fixboth")
+    if fb and lstm in fb["rates"] and lstm in R and time_cols:
+        cols = [kp] + time_cols
+        b = float(np.mean([R[lstm][c] for c in cols]))
+        a = float(np.mean([fb["rates"][lstm][c] for c in cols]))
+        cap_drop = R[lstm]["CAP"] - fb["rates"][lstm]["CAP"]
+        out.append((f"H5b channel + time negatives fix both ({gdn})",
+                    _verdict(a <= 0.5 * b and cap_drop <= 0.05),
+                    f"mean of {', '.join(cols)}: {b:.2f} -> {a:.2f}; CAP change {-cap_drop:+.2f}"))
+    if fix and CI in fix["rates"] and lstm in fix["rates"] and CI in R:
+        ci_a, ls_a = fix["rates"][CI][kp], fix["rates"][lstm][kp]
+        out.append(("H8 additive (channel-independent) model stays fooled after the fix",
+                    _verdict(ci_a >= ls_a + 0.10),
+                    f"after all-but-one negatives: channel-indep. {kp} {R[CI][kp]:.2f} -> {ci_a:.2f} "
+                    f"vs {gdn} {R[lstm][kp]:.2f} -> {ls_a:.2f}"))
+
     # H6 / H7 per model: real unknown faults (never trained on)
     others = [r for r in main.get("unknown_faults", {}).values() if r["group"] == "other"]
     for model, bo in main.get("unknown_by_overlap", {}).items():
@@ -304,7 +347,8 @@ def hypothesis_checks(main, ident, sweep, fix):
     return out
 
 
-def write_report(src_name, out, main, ident, sweep, fix, cfg):
+def write_report(src_name, out, main, ident, sweep, fix, cfg, fixes=None):
+    fixes = fixes or {}
     k = main["k"]
     present = next(iter(main["rates"].values()))
     cols = [c for c in ["NORMAL", "CAP"] + [f"P{m}" for m in range(1, k)] + EXTRA_KINDS if c in present]
@@ -319,7 +363,7 @@ def write_report(src_name, out, main, ident, sweep, fix, cfg):
         lines += ["Signature selection details:", "```",
                   json.dumps(main["signature_info"], indent=1)[:3000], "```", ""]
     lines += ["## Hypothesis checks", "", "| Check | Verdict | Evidence |", "|---|---|---|"]
-    for name, v, ev in hypothesis_checks(main, ident, sweep, fix):
+    for name, v, ev in hypothesis_checks(main, ident, sweep, fix, fixes):
         lines.append(f"| {name} | **{v}** | {ev} |")
     lines += ["", "## Flag rates (fraction flagged as the target fault)", "",
               L.md_table(main["rates"], cols), "",
@@ -375,6 +419,19 @@ def write_report(src_name, out, main, ident, sweep, fix, cfg):
         if fix.get("unknown_by_overlap"):
             lines += ["Other-fault flag rate by overlap after the fix:", ""]
             for d, b in fix["unknown_by_overlap"].items():
+                lines.append(f"- {d}: " + ", ".join(
+                    f"ov{o}={b[str(o)]['flag_rate']:.2f}" for o in range(k + 1)
+                    if b.get(str(o), {}).get("n")))
+            lines.append("")
+    for name in ("fixtime", "fixboth"):
+        fx = fixes.get(name)
+        if not fx:
+            continue
+        lines += [f"## Targeted {FIX_LABEL[name]} added to training", "",
+                  L.md_table(fx["rates"], cols), ""]
+        if fx.get("unknown_by_overlap"):
+            lines += ["Other-fault flag rate by overlap:", ""]
+            for d, b in fx["unknown_by_overlap"].items():
                 lines.append(f"- {d}: " + ", ".join(
                     f"ov{o}={b[str(o)]['flag_rate']:.2f}" for o in range(k + 1)
                     if b.get(str(o), {}).get("n")))
@@ -461,21 +518,34 @@ def make_figures(out, main, sweep, fix):
         plt.close(fig)
 
 
-def run_suite(src, out, cfg, steps=("main", "ident", "sweep", "fix")):
+DEFAULT_STEPS = ("main", "ident", "sweep", "fix", "fixtime", "fixboth")
+
+
+def run_suite(src, out, cfg, steps=DEFAULT_STEPS):
+    # fail early (not mid-run) if a split has no windows where the target fault is present
+    for split in ("train", "test"):
+        if len(src.construct(split, "CAP", 5, np.random.default_rng(0))) == 0:
+            raise SystemExit(
+                f"No windows in the '{split}' split where the target's signature is present. "
+                "The data is too short for this target or split: try a smaller --block, "
+                "a lower --min-dev, another --target, or a dataset with more runs.")
     os.makedirs(out, exist_ok=True)
     _save(os.path.join(out, "config.json"), cfg)
     main = step_main(src, cfg, out) if "main" in steps else _load(os.path.join(out, "main.json"))
     ident = step_ident(src, cfg, out) if "ident" in steps else {}
     sweep = step_sweep(src, cfg, out) if "sweep" in steps else {}
     fix = step_fix(src, cfg, out) if "fix" in steps else {}
-    write_report(src.name, out, main, ident, sweep, fix, cfg)
+    has_time = "ASYNC" in getattr(src, "test_kinds", EXTRA_KINDS)  # tabular sources have no time axis
+    fixes = {name: step_fix(src, cfg, out, name) for name in ("fixtime", "fixboth")
+             if name in steps and has_time}
+    write_report(src.name, out, main, ident, sweep, fix, cfg, fixes)
     make_figures(out, main, sweep, fix)
     k = main["k"]
     present = next(iter(main["rates"].values()))
     cols = [c for c in ["NORMAL", "CAP"] + [f"P{m}" for m in range(1, k)] + EXTRA_KINDS if c in present]
     print("\n" + L.fmt_table(main["rates"], cols))
     print("\nHypothesis checks:")
-    for name, v, ev in hypothesis_checks(main, ident, sweep, fix):
+    for name, v, ev in hypothesis_checks(main, ident, sweep, fix, fixes):
         print(f"  [{v}] {name}\n      {ev}")
     print(f"\nReport: {os.path.join(out, 'REPORT.md')}")
     return main, ident, sweep, fix
