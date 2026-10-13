@@ -20,6 +20,8 @@ CPU Python with numpy, pandas, scikit-learn, matplotlib.
 | `real_data.py` | Schema-agnostic LBNL loader; pairs each fault CSV with its fault-free twin; builds windows |
 | `run_real.py` | Runs the battery on one LBNL dataset |
 | `run_nist.py` | Tabular version for the NIST heat-pump spreadsheet (no time axis → no LSTM / ASYNC) |
+| `ci_numpy.py` | Channel-independent detector (shared per-channel encoder + linear head, additive across channels), Adam/backprop in NumPy, gradient check |
+| `tep_to_csv.py` | Tennessee Eastman (Braatz runs) -> LBNL-style CSVs for `run_real.py` (see TEP note below) |
 | `make_fake_lbnl.py` | Fake dataset in LBNL layout with a known answer, for smoke tests |
 | `run_all.sh`, `smoke_test.sh` | One-shot pipelines |
 
@@ -128,6 +130,33 @@ scaled by its own residual noise, and requires all of them up in the same 8-step
 It is a noise-floor reference: with slow, autocorrelated residuals it can pass some partial
 matches by chance, so H2 is judged as a gap (model − rule), not against zero.
 
+## Targeted-negative variants and the channel-independent model
+
+Each run trains three fixes, all with the same number of extra label-0 windows (n_train/2):
+
+| Step | Negatives added | Tests |
+|---|---|---|
+| `fix` | all-but-one: k−1 signature channels move | channel identifiability (H5) |
+| `fixtime` | staggered: all k move, but at different times (ASYNC, ASYNC2) | time identifiability (H5t) |
+| `fixboth` | half of each | both (H5b) |
+
+`Channel-indep. (raw series)` is additive across channels by construction, like
+channel-independent time-series models with a linear head. H8 checks the theory's prediction
+that it stays fooled by partial matches after the channel fix while the LSTM does not.
+
+## Tennessee Eastman (TEP)
+
+`python tep_to_csv.py` downloads the classic Braatz runs (one fault-free and 21 faulty test
+runs, 960 samples at 3 min, fault from sample 160) and writes LBNL-style CSVs.
+`run_real.py --data data/raw/tep --resample none --block 4h --inspect` works and is useful:
+it shows that IDV4 (reactor cooling-water step) is effectively a single-channel fault
+(`XMV_10` only) and that IDV11/IDV14 are variance faults, so 4/11/14 is not a conjunction
+test; IDV5 (condenser cooling water, `XMV_11` + `XMEAS_11` + `XMEAS_35`) is the closer analogue.
+The full battery needs more than one 48-hour run per fault (controllers compensate IDV5 within
+hours, leaving too few test windows), so use the multi-run TEP dataset (Rieth et al. 2017,
+Harvard Dataverse) for real results. The fault-free and faulty Braatz runs use different
+random seeds, so their deviations are not exact counterfactuals.
+
 ## Hypothesis verdicts (top of each REPORT.md)
 
 | Check | Slide claim | Criterion |
@@ -139,6 +168,8 @@ matches by chance, so H2 is judged as a gap (model − rule), not against zero.
 | H4 | More data / balancing does not help (slide 15) | LSTM P{k−1} false alarms ≥ 0.30 across the sweep |
 | H5 | Targeted negatives help (slide 18) | P{k−1} false alarms halve, CAP recall drops ≤ 0.05 |
 | H6 (per model) | Real unknown faults that overlap the signature get flagged | partial-overlap flag rate ≥ 0.20, ≥ 0.15 above and ≥ 2× the no-overlap rate |
+| H5t / H5b | Staggered negatives fix simultaneity; both kinds fix both | ASYNC/ASYNC2 (and P{k−1}) halve, CAP drops ≤ 0.05 |
+| H8 | Additive (channel-independent) models stay fooled after the channel fix | channel-indep. P{k−1} ≥ LSTM's + 0.10 after `fix` |
 | H7 (per model) | Most fleet false alarms come from unknown faults (slide 13) | ≥ 50% in the 89/1/10 mix; INCONCLUSIVE if unknown faults are flagged < 5% (share of tiny numbers) |
 
 H6 and H7 are the new evidence the toy could not give: they use real, different faults rather

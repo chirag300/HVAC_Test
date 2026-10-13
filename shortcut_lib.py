@@ -21,6 +21,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import cross_val_score
 
 from lstm_numpy import NumpyLSTMClassifier
+from ci_numpy import NumpyChannelIndependentClassifier
 
 STAT_NAMES = ["mean", "min", "max", "std", "slope", "last8"]
 FPR = 0.01
@@ -150,6 +151,9 @@ DETECTORS = {
         hidden_layer_sizes=(128, 64), solver="adam", max_iter=300, early_stopping=True,
         random_state=s)),
     "LSTM (raw series)": ("raw48", lambda s: NumpyLSTMClassifier(hidden=32, epochs=30, seed=s)),
+    # per-channel shared encoder + linear head: additive across channels by construction
+    "Channel-indep. (raw series)": ("raw48", lambda s: NumpyChannelIndependentClassifier(
+        hidden=32, epochs=30, seed=s)),
 }
 
 
