@@ -1,0 +1,218 @@
+{
+  "n=500|prev=0.1": {
+    "LogReg (stats)": {
+      "partial_FA": 0.6785,
+      "CAP": 0.944
+    },
+    "Grad. boosting (stats)": {
+      "partial_FA": 0.537,
+      "CAP": 0.7935
+    },
+    "MLP (raw series)": {
+      "partial_FA": 0.3545,
+      "CAP": 0.7465
+    },
+    "LSTM (raw series)": {
+      "partial_FA": 0.488,
+      "CAP": 0.8615
+    }
+  },
+  "n=500|prev=0.5": {
+    "LogReg (stats)": {
+      "partial_FA": 0.6345,
+      "CAP": 0.9395
+    },
+    "Grad. boosting (stats)": {
+      "partial_FA": 0.364,
+      "CAP": 0.882
+    },
+    "MLP (raw series)": {
+      "partial_FA": 0.422,
+      "CAP": 0.7965
+    },
+    "LSTM (raw series)": {
+      "partial_FA": 0.425,
+      "CAP": 0.861
+    }
+  },
+  "n=500|prev=0.9": {
+    "LogReg (stats)": {
+      "partial_FA": 0.6865,
+      "CAP": 0.95
+    },
+    "Grad. boosting (stats)": {
+      "partial_FA": 0.17,
+      "CAP": 0.831
+    },
+    "MLP (raw series)": {
+      "partial_FA": 0.3485,
+      "CAP": 0.663
+    },
+    "LSTM (raw series)": {
+      "partial_FA": 0.3615,
+      "CAP": 0.8
+    }
+  },
+  "n=2000|prev=0.1": {
+    "LogReg (stats)": {
+      "partial_FA": 0.7505,
+      "CAP": 0.964
+    },
+    "Grad. boosting (stats)": {
+      "partial_FA": 0.7595,
+      "CAP": 0.913
+    },
+    "MLP (raw series)": {
+      "partial_FA": 0.5315,
+      "CAP": 0.912
+    },
+    "LSTM (raw series)": {
+      "partial_FA": 0.5815,
+      "CAP": 0.9085
+    }
+  },
+  "n=2000|prev=0.5": {
+    "LogReg (stats)": {
+      "partial_FA": 0.6935,
+      "CAP": 0.948
+    },
+    "Grad. boosting (stats)": {
+      "partial_FA": 0.667,
+      "CAP": 0.9475
+    },
+    "MLP (raw series)": {
+      "partial_FA": 0.524,
+      "CAP": 0.8995
+    },
+    "LSTM (raw series)": {
+      "partial_FA": 0.5005,
+      "CAP": 0.9125
+    }
+  },
+  "n=2000|prev=0.9": {
+    "LogReg (stats)": {
+      "partial_FA": 0.6685,
+      "CAP": 0.944
+    },
+    "Grad. boosting (stats)": {
+      "partial_FA": 0.1845,
+      "CAP": 0.8535
+    },
+    "MLP (raw series)": {
+      "partial_FA": 0.553,
+      "CAP": 0.9045
+    },
+    "LSTM (raw series)": {
+      "partial_FA": 0.455,
+      "CAP": 0.8895
+    }
+  },
+  "n=8000|prev=0.1": {
+    "LogReg (stats)": {
+      "partial_FA": 0.76,
+      "CAP": 0.967
+    },
+    "Grad. boosting (stats)": {
+      "partial_FA": 0.78,
+      "CAP": 0.9425
+    },
+    "MLP (raw series)": {
+      "partial_FA": 0.572,
+      "CAP": 0.9315
+    },
+    "LSTM (raw series)": {
+      "partial_FA": 0.5505,
+      "CAP": 0.924
+    }
+  },
+  "n=8000|prev=0.5": {
+    "LogReg (stats)": {
+      "partial_FA": 0.7795,
+      "CAP": 0.9725
+    },
+    "Grad. boosting (stats)": {
+      "partial_FA": 0.7045,
+      "CAP": 0.9665
+    },
+    "MLP (raw series)": {
+      "partial_FA": 0.6305,
+      "CAP": 0.9525
+    },
+    "LSTM (raw series)": {
+      "partial_FA": 0.691,
+      "CAP": 0.984
+    }
+  },
+  "n=8000|prev=0.9": {
+    "LogReg (stats)": {
+      "partial_FA": 0.761,
+      "CAP": 0.967
+    },
+    "Grad. boosting (stats)": {
+      "partial_FA": 0.3355,
+      "CAP": 0.9335
+    },
+    "MLP (raw series)": {
+      "partial_FA": 0.6005,
+      "CAP": 0.94
+    },
+    "LSTM (raw series)": {
+      "partial_FA": 0.4705,
+      "CAP": 0.9085
+    }
+  },
+  "n=20000|prev=0.1": {
+    "LogReg (stats)": {
+      "partial_FA": 0.858,
+      "CAP": 0.9855
+    },
+    "Grad. boosting (stats)": {
+      "partial_FA": 0.853,
+      "CAP": 0.965
+    },
+    "MLP (raw series)": {
+      "partial_FA": 0.598,
+      "CAP": 0.9465
+    },
+    "LSTM (raw series)": {
+      "partial_FA": 0.6715,
+      "CAP": 0.9775
+    }
+  },
+  "n=20000|prev=0.5": {
+    "LogReg (stats)": {
+      "partial_FA": 0.8185,
+      "CAP": 0.98
+    },
+    "Grad. boosting (stats)": {
+      "partial_FA": 0.791,
+      "CAP": 0.9765
+    },
+    "MLP (raw series)": {
+      "partial_FA": 0.6135,
+      "CAP": 0.952
+    },
+    "LSTM (raw series)": {
+      "partial_FA": 0.7595,
+      "CAP": 0.9915
+    }
+  },
+  "n=20000|prev=0.9": {
+    "LogReg (stats)": {
+      "partial_FA": 0.8,
+      "CAP": 0.9795
+    },
+    "Grad. boosting (stats)": {
+      "partial_FA": 0.555,
+      "CAP": 0.9695
+    },
+    "MLP (raw series)": {
+      "partial_FA": 0.6385,
+      "CAP": 0.9565
+    },
+    "LSTM (raw series)": {
+      "partial_FA": 0.684,
+      "CAP": 0.979
+    }
+  }
+}
