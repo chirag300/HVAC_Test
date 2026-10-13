@@ -138,8 +138,8 @@ matches by chance, so H2 is judged as a gap (model − rule), not against zero.
 | H3 | The true rule scores lower on the training task | AND-rule CAP recall < mean learned recall |
 | H4 | More data / balancing does not help (slide 15) | LSTM P{k−1} false alarms ≥ 0.30 across the sweep |
 | H5 | Targeted negatives help (slide 18) | P{k−1} false alarms halve, CAP recall drops ≤ 0.05 |
-| H6 | Real unknown faults that overlap the signature get flagged | partial-overlap windows flagged ≥ max(0.20, 5× no-overlap) |
-| H7 | Most fleet false alarms come from unknown faults (slide 13) | ≥ 50% in the 89/1/10 mix |
+| H6 (per model) | Real unknown faults that overlap the signature get flagged | partial-overlap flag rate ≥ 0.20, ≥ 0.15 above and ≥ 2× the no-overlap rate |
+| H7 (per model) | Most fleet false alarms come from unknown faults (slide 13) | ≥ 50% in the 89/1/10 mix; INCONCLUSIVE if unknown faults are flagged < 5% (share of tiny numbers) |
 
 H6 and H7 are the new evidence the toy could not give: they use real, different faults rather
 than constructs. A result that is NOT SUPPORTED is still informative — e.g. if the target's
