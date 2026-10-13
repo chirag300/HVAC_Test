@@ -60,7 +60,8 @@ def main():
     ap.add_argument("--n-other", type=int, default=300, help="windows per unknown-fault file")
     ap.add_argument("--sweep-sizes", default="500,2000,8000")
     ap.add_argument("--sweep-prev", default="0.1,0.5,0.9")
-    ap.add_argument("--steps", default="main,ident,sweep,fix")
+    ap.add_argument("--steps", default="main,ident,sweep,fix,fixtime,fixboth")
+    ap.add_argument("--block", default="7D", help="train/val/test split block length (pandas offset)")
     ap.add_argument("--models", default="all", help="comma list of model names or 'all'")
     ap.add_argument("--lstm-epochs", type=int, default=30)
     ap.add_argument("--lstm-hidden", type=int, default=32)
@@ -80,7 +81,7 @@ def main():
     for v in variants:
         print(f"\n=== loading {a.data} (non-signature mode: {v}) ===")
         if src is None:
-            src = LBNLSource(a.data, target=a.target, k=a.k, resample=a.resample,
+            src = LBNLSource(a.data, target=a.target, k=a.k, resample=None if a.resample.lower() == "none" else a.resample, block=a.block,
                              base_freq=a.base_freq, T=a.window,
                              onset=tuple(int(x) for x in a.onset.split(",")),
                              min_dev=a.min_dev, dedup_corr=a.dedup_corr, nonsig=v,

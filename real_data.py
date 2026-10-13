@@ -157,7 +157,9 @@ class LBNLSource:
         Zraw = {nn: raw[nn][cols].to_numpy(np.float32) for nn in normals}
         for nn in normals:
             idx = raw[nn].index
-            step = pd.Timedelta(resample or base_freq)
+            # sampling step: the resample rule, else the data's own median spacing
+            step = pd.Timedelta(resample) if resample else \
+                (pd.Series(idx).diff().median() if len(idx) > 1 else pd.Timedelta(base_freq))
             bsteps = max(self.T + 1, int(pd.Timedelta(block) / step))
             bid = np.arange(len(idx)) // bsteps
             ub = np.unique(bid)
