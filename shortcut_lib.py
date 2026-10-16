@@ -48,22 +48,29 @@ def stat_columns(channels):
 
 
 # ------------------------------------------------------------------ constructs
-TEST_KINDS = ["CAP", "P1", "P2", "BIG1", "ASYNC", "ASYNC2", "UP", "OFF"]
+TEST_KINDS = ["CAP", "P1", "P2", "BIG1", "ASYNC", "ASYNC2", "PAIRSTAG", "UP", "OFF"]
 
 
 def build_construct(kind, W, D, onsets, sig, rng, nonsig="normal", off_pool=None,
-                    big=3.0, dip_len=6, keep=None, channel=None):
+                    big=3.0, dip_len=6, keep=None, channel=None, dscale=1.0):
     """
-    kind     : CAP | P<m> (m of k sig channels) | ALLBUT1 | BIG1 | ASYNC | ASYNC2 | UP | OFF
-               | SINGLE (only `channel` deviates) | NORMAL
+    kind     : CAP | P<m> (m of k sig channels) | ALLBUT1 | BIG1 | ASYNC | ASYNC2 | PAIRSTAG
+               | UP | OFF | SINGLE (only `channel` deviates) | NORMAL
+               ASYNC/ASYNC2 are FULLY staggered (no two signature channels shifted at once).
+               PAIRSTAG is the Helly boundary case: one pair of signature channels is never
+               shifted at the same time, every other pair overlaps (all channels shifted for the
+               same duration). Theory: only PAIRSTAG-type negatives teach "simultaneous".
     W, D     : (N,T,C) normal windows and fault deviations (already standardized)
     onsets   : (N,) onset index per window; deviation applied for t >= onset
     sig      : list of signature channel indices (length k)
     nonsig   : "normal" -> non-signature channels keep normal values (clean test)
                "real"   -> non-signature channels also carry their real deviation
     off_pool : channels OFF may move the deviation onto (default: all non-signature)
-    keep     : for ALLBUT1, which signature position to leave out per window (cycles if None)
+    keep     : for ALLBUT1 / PAIRSTAG, which signature position / pair per window (cycles if None)
+    dscale   : multiply the fault deviation D (signal-strength sweep; theory: detectability paradox)
     """
+    if dscale != 1.0:
+        D = D * np.float32(dscale)
     N, T, C = W.shape
     k = len(sig)
     sig = np.asarray(sig)
@@ -96,6 +103,15 @@ def build_construct(kind, W, D, onsets, sig, rng, nonsig="normal", off_pool=None
             bounds = np.linspace(o, T, k + 1).astype(int)
             for seg, c in enumerate(rng.permutation(sig)):
                 G[bounds[seg]:bounds[seg + 1], c] = 1.0
+        elif kind == "PAIRSTAG":
+            pairs = [(i, j) for i in range(k) for j in range(i + 1, k)]
+            a, b = pairs[(n if keep is None else int(keep[n])) % len(pairs)]
+            h = (T - o) // 2
+            G[o:o + h, sig[a]] = 1.0
+            G[o + h:o + 2 * h, sig[b]] = 1.0
+            for j in range(k):
+                if j not in (a, b):
+                    G[o + h // 2:o + h // 2 + h, sig[j]] = 1.0
         elif kind == "ASYNC2":
             # short dips at separate random times, never more than one channel at once
             free = np.ones(T, bool)
@@ -117,6 +133,39 @@ def build_construct(kind, W, D, onsets, sig, rng, nonsig="normal", off_pool=None
             raise ValueError(kind)
         X[n] += G * D[n]
     return X
+
+
+# ------------------------------------------------------- theory predictions
+from itertools import combinations
+from statistics import NormalDist
+
+_N = NormalDist()
+
+
+def _probit(rate, n=None):
+    eps = 0.5 / n if n else 1e-4
+    return _N.inv_cdf(min(max(float(rate), eps), 1 - eps))
+
+
+def predict_from_detection(cap_rate, r, alpha=FPR, n=None):
+    """Theory, Cor. 'power-specificity curve': a detector that is (a monotone function of) the
+    additive statistic flags a fault reproducing a share r of the target's signal with
+    probability Phi(r * (Phi^-1(beta) + z_alpha) - z_alpha), beta = its detection rate."""
+    z = _N.inv_cdf(1 - alpha)
+    return _N.cdf(r * (_probit(cap_rate, n) + z) - z)
+
+
+def predict_partial_additive(cap_rate, single_rates, m, alpha=FPR, n=None):
+    """Same law with unequal channels: channel j's share r_j is read off its single-channel flag
+    rate, r_j = (Phi^-1(single_j) + z) / D, and the m-of-k rate is averaged over channel subsets.
+    If the model is additive across channels this predicts P_m from CAP and the singles alone."""
+    z = _N.inv_cdf(1 - alpha)
+    D = _probit(cap_rate, n) + z
+    if D <= 0:
+        return float("nan")
+    r = [(_probit(s, n) + z) / D for s in single_rates]
+    vals = [_N.cdf(D * sum(r[j] for j in sub) - z) for sub in combinations(range(len(r)), m)]
+    return float(np.mean(vals))
 
 
 # ------------------------------------------------------------------ true rule
@@ -154,6 +203,9 @@ DETECTORS = {
     # per-channel shared encoder + linear head: additive across channels by construction
     "Channel-indep. (raw series)": ("raw48", lambda s: NumpyChannelIndependentClassifier(
         hidden=32, epochs=30, seed=s)),
+    # same, but each channel's evidence is bounded (tanh): can represent the AND (theory, Prop. cap)
+    "Capped CI (raw series)": ("raw48", lambda s: NumpyChannelIndependentClassifier(
+        hidden=32, epochs=30, seed=s, capped=True)),
 }
 
 

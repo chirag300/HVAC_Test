@@ -1,0 +1,81 @@
+
+C1  Partial-overlap false-alarm law (k=3, δ/σ=1.5 per channel, α=1%)
+test                 predicted    n=200,π=0.1   n=2000,π=0.5  n=20000,π=0.9   2-layer ReLU
+CAP (all 3)              0.607          0.503          0.602          0.605        0.478
+P2 (2 of 3)              0.276          0.215          0.282          0.262        0.203
+P1 (1 of 3)              0.072          0.065          0.070          0.068        0.057
+BIG1 (one ×3)            0.607          0.503          0.585          0.583        0.452
+UP (sign flipped)        0.000          0.000          0.000          0.000        0.000
+OFF (moved)              0.010          0.009          0.009          0.012        0.012
+range over n∈{2000,20000} × prevalence∈{.1,.5,.9}: CAP 0.585–0.610, P2 0.250–0.282, P1 0.064–0.072, BIG1 0.544–0.619, UP 0.000–0.000, OFF 0.008–0.012
+2-layer net, predicted from its own detection rate (trade-off curve): P2 pred 0.208 meas 0.203, P1 pred 0.058 meas 0.057
+
+C2  Detectability paradox: P2 false alarms vs per-channel signal δ/σ (k=3)
+  δ/σ power pred power meas  P2 pred  P2 meas  P1 pred  P1 meas
+  0.5      0.072      0.069    0.040    0.039    0.021    0.023
+  1.0      0.276      0.271    0.121    0.121    0.040    0.038
+  1.5      0.607      0.601    0.276    0.265    0.072    0.068
+  2.0      0.872      0.871    0.493    0.497    0.121    0.119
+  2.5      0.977      0.975    0.712    0.699    0.189    0.197
+  3.0      0.998      0.998    0.872    0.862    0.276    0.251
+  4.0      1.000      1.000    0.989    0.985    0.493    0.449
+trade-off curve, k=3: power 0.500→P2 0.22, 0.900→P2 0.53, 0.980→P2 0.72, 0.999→P2 0.90
+
+C3  Composite null, k=3. Size = worst false-alarm rate over partial faults; power = target detection
+ δ/σ | additive (simple-null cal.) | additive (bounded-null cal.) |  intersection-union (min) |  capped Σ min(a,δ) | bound
+     |       size≤δ  size∞   power |        size≤δ  size∞   power |       size∞   power  pred |      size∞   power |
+ 2.0 |  0.493  1.000   0.872 |   0.010  1.000   0.121 |   0.010   0.051 0.052 |   0.000   0.000  | 0.372
+ 3.0 |  0.872  1.000   0.998 |   0.010  1.000   0.276 |   0.010   0.423 0.421 |   0.010   0.365  | 0.750
+ 4.0 |  0.989  1.000   1.000 |   0.010  1.000   0.493 |   0.010   0.866 0.865 |   0.010   0.720  | 0.953
+ 5.0 |  1.000  1.000   1.000 |   0.010  1.000   0.712 |   0.010   0.989 0.989 |   0.010   0.909  | 0.996
+
+C4  Separated regime, 2-layer ReLU nets trained by gradient descent (d=10, noise σ=0.15, δ=1)
+  k linear (k-1)/k  bound 1-1/√k·ρ measured pos.  ρ=R/Rmin flagged@1% R ratio with/without near-misses    √k
+  2          0.500           0.074         0.533      1.31      0.983                             2.96  1.41
+  3          0.667           0.277         0.740      1.25      1.000                             3.74  1.73
+  4          0.750           0.383         0.806      1.23      1.000                             5.62  2.00
+  5          0.800           0.446         0.842      1.24      1.000                             6.42  2.24
+  6          0.833           0.509         0.884      1.20      1.000                             7.54  2.45
+  8          0.875           0.559         0.909      1.25      1.000                             5.84  2.83
+
+C5  Recipe: P2 false alarms vs near-miss negatives per type (k=3, 2-layer ReLU, 1000+1000 normal/fault)
+wd=0      0:0.85 1:0.74 2:0.69 4:0.56 8:0.49 16:0.45 32:0.40 64:0.38 128:0.32   (detection min 0.98)
+wd=0.001  0:0.92 1:0.92 2:0.92 4:0.90 8:0.85 16:0.75 32:0.65 64:0.53 128:0.46   (detection min 1.00)
+wd=0.01   0:0.93 1:0.93 2:0.93 4:0.93 8:0.93 16:0.93 32:0.93 64:0.92 128:0.90   (detection min 1.00)
+
+C6  (rerun below with equal-duration pair-staggered constructs)
+
+C7  AR(1) effective noise of the baseline-corrected post-onset mean (σ_x=1, B=8 baseline steps)
+  φ=0.0 L=10: Var measured 0.2241  formula 0.2250
+  φ=0.0 L=30: Var measured 0.1586  formula 0.1583
+  φ=0.5 L=10: Var measured 0.5634  formula 0.5603
+  φ=0.5 L=30: Var measured 0.4052  formula 0.4041
+  φ=0.7 L=10: Var measured 0.8083  formula 0.8075
+  φ=0.7 L=30: Var measured 0.6234  formula 0.6210
+  φ=0.9 L=10: Var measured 0.8245  formula 0.8248
+  φ=0.9 L=30: Var measured 0.8856  formula 0.8837
+
+C8  Toy study (slide 12): partial-match rates predicted from detection rate alone, no fitting
+model             CAP  P1 pred  P1 obs  P2 pred  P2 obs
+LogReg           0.99     0.22    0.35     0.78    0.89
+Random forest    0.99     0.22    0.22     0.78    0.83
+Grad. boosting   0.99     0.22    0.21     0.78    0.87
+MLP              0.98     0.19    0.19     0.72    0.73
+LSTM             0.98     0.19    0.20     0.72    0.73
+
+done in 611s -> /home/claude/hvac_test/theory/checks_out/results.json
+
+C6a Window statistics (mean, std, min, max) + logistic regression, weak signal δ=0.25: fraction flagged
+     full 0.276, stag 0.274, pair 0.270   (lemma: stag = pair = full)
+C6b Raw-series 2-layer ReLU net (gradient descent), trained with different negatives: fraction flagged
+     normal vs fault      target 1.00 · fully staggered 0.96 · pair-staggered 0.99
+     + fully staggered    target 1.00 · fully staggered 0.01 · pair-staggered 0.94
+     + pair-staggered     target 1.00 · fully staggered 0.00 · pair-staggered 0.16
+
+C9  Supervision–regularization threshold p*(λ) (δ=1): below p*, every minimizer flags some near-miss
+  k=3: λ=0.0001 → p*=0.0002, λ=0.001 → p*=0.0013, λ=0.01 → p*=0.0088, λ=0.03 → p*=0.0170
+  k=4: λ=0.0001 → p*=0.0002, λ=0.001 → p*=0.0018, λ=0.01 → p*=0.0147, λ=0.03 → p*=0.0315
+  k=6: λ=0.0001 → p*=0.0002, λ=0.001 → p*=0.0024, λ=0.01 → p*=0.0211, λ=0.03 → p*=0.0493
+  k=8: λ=0.0001 → p*=0.0003, λ=0.001 → p*=0.0028, λ=0.01 → p*=0.0254, λ=0.03 → p*=0.0608
+
+done in 293s -> /home/claude/hvac_test/theory/checks_out/results.json

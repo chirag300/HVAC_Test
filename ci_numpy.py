@@ -13,6 +13,16 @@ channels moved together" except as a thresholded sum. It is the empirical counte
 additive class in the theory (partial-match false-alarm law, small margin with targeted
 negatives).
 
+capped=True gives the CAPPED variant (theory: Prop. "capped evidence is necessary"):
+
+    u_c   = A_c . z_c + d_c
+    score = beta * sum_c tanh(u_c) + b0
+
+Each channel now contributes at most |beta| to the score, so k-1 loud channels can never
+outweigh one silent channel when b0 sits between -(k)beta and -(k-1)beta: the model CAN
+represent the intersection-union (AND) rule, while staying channel-independent. The uncapped
+model cannot (one unbounded channel can always carry the score).
+
 Run `python ci_numpy.py` for a finite-difference gradient check.
 """
 import numpy as np
@@ -29,16 +39,21 @@ def _sigmoid(x):
 
 class NumpyChannelIndependentClassifier:
     def __init__(self, hidden=32, lr=3e-3, epochs=30, batch_size=64, clip=5.0, val_frac=0.15,
-                 patience=6, seed=0, dtype=np.float32, verbose=False):
+                 patience=6, seed=0, dtype=np.float32, verbose=False, capped=False):
         self.H, self.lr, self.epochs, self.batch_size = hidden, lr, epochs, batch_size
         self.clip, self.val_frac, self.patience, self.seed = clip, val_frac, patience, seed
-        self.dtype, self.verbose = dtype, verbose
+        self.dtype, self.verbose, self.capped = dtype, verbose, capped
 
     def _init(self, T, C):
         rng = np.random.default_rng(self.seed)
         H = self.H
         self.p = {"W1": rng.normal(0, np.sqrt(2.0 / T), (T, H)), "b1": np.zeros(H),
                   "A": rng.normal(0, 1.0 / np.sqrt(C * H), (C, H)), "b0": np.zeros(1)}
+        if self.capped:
+            # same A as the uncapped model, so tanh starts in its linear regime (the capped model
+            # starts as the additive one, up to the scale beta) and saturates only where it helps
+            self.p["d"] = np.zeros(C)
+            self.p["beta"] = np.full(1, 3.0)
         self.p = {k: v.astype(self.dtype) for k, v in self.p.items()}
         self.m = {k: np.zeros_like(v) for k, v in self.p.items()}
         self.v = {k: np.zeros_like(v) for k, v in self.p.items()}
@@ -48,6 +63,10 @@ class NumpyChannelIndependentClassifier:
         p = self.p
         Zpre = np.einsum("ntc,th->nch", X, p["W1"]) + p["b1"]
         Z = np.maximum(Zpre, 0)
+        if self.capped:
+            U = np.tanh(np.einsum("nch,ch->nc", Z, p["A"]) + p["d"])
+            s = p["beta"][0] * U.sum(1) + p["b0"][0]
+            return s, Zpre, (Z, U)
         s = np.einsum("nch,ch->n", Z, p["A"]) + p["b0"][0]
         return s, Zpre, Z
 
@@ -56,8 +75,17 @@ class NumpyChannelIndependentClassifier:
         pr = _sigmoid(s)
         loss = -np.mean(y * np.log(pr + 1e-7) + (1 - y) * np.log(1 - pr + 1e-7))
         ds = ((pr - y) / len(X)).astype(self.dtype)
-        g = {"A": np.einsum("n,nch->ch", ds, Z), "b0": np.array([ds.sum()], self.dtype)}
-        dZpre = ds[:, None, None] * self.p["A"][None] * (Zpre > 0)
+        if self.capped:
+            Z, U = Z
+            g = {"b0": np.array([ds.sum()], self.dtype),
+                 "beta": np.array([(ds[:, None] * U).sum()], self.dtype)}
+            du = ds[:, None] * self.p["beta"][0] * (1 - U * U)          # (n, C)
+            g["A"] = np.einsum("nc,nch->ch", du, Z)
+            g["d"] = du.sum(0)
+            dZpre = du[:, :, None] * self.p["A"][None] * (Zpre > 0)
+        else:
+            g = {"A": np.einsum("n,nch->ch", ds, Z), "b0": np.array([ds.sum()], self.dtype)}
+            dZpre = ds[:, None, None] * self.p["A"][None] * (Zpre > 0)
         g["W1"] = np.einsum("ntc,nch->th", X, dZpre)
         g["b1"] = dZpre.sum(axis=(0, 1))
         return loss, g
@@ -114,11 +142,11 @@ class NumpyChannelIndependentClassifier:
         return np.stack([1 - pr, pr], 1)
 
 
-def gradcheck(seed=0, tol=1e-5):
+def gradcheck(seed=0, tol=1e-5, capped=False):
     rng = np.random.default_rng(seed)
     X = rng.normal(size=(6, 9, 4))
     y = (rng.random(6) > 0.5).astype(float)
-    m = NumpyChannelIndependentClassifier(hidden=5, dtype=np.float64)
+    m = NumpyChannelIndependentClassifier(hidden=5, dtype=np.float64, capped=capped)
     m._init(9, 4)
     for k in m.p:
         m.p[k] += rng.normal(scale=0.3, size=m.p[k].shape)
@@ -140,6 +168,10 @@ def gradcheck(seed=0, tol=1e-5):
 
 
 if __name__ == "__main__":
-    err, ok = gradcheck()
-    print(f"CI model gradient check: max relative error {err:.2e} -> {'PASS' if ok else 'FAIL'}")
-    raise SystemExit(0 if ok else 1)
+    ok_all = True
+    for capped in (False, True):
+        err, ok = gradcheck(capped=capped)
+        ok_all &= ok
+        print(f"{'capped' if capped else 'uncapped'} CI model gradient check: max relative error "
+              f"{err:.2e} -> {'PASS' if ok else 'FAIL'}")
+    raise SystemExit(0 if ok_all else 1)

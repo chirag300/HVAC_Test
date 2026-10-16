@@ -10,13 +10,14 @@ onset t in [10,25] to the end, baseline = mean of first 8 steps subtracted, 4000
 
     python run_toy.py                 # full battery (~5-10 min on a laptop CPU)
     python run_toy.py --quick         # smaller sweep, fewer LSTM epochs
+    python run_toy.py --steps main,fix,fixtime,fixhelly,nmsweep,scale   # theory experiments
 """
 import argparse
 
 import numpy as np
 
 import shortcut_lib as L
-from experiments import run_suite
+from experiments import run_suite, DEFAULT_STEPS
 
 
 class ToySource:
@@ -75,15 +76,23 @@ def main():
     ap.add_argument("--quick", action="store_true")
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--steps", default=",".join(DEFAULT_STEPS),
+                    help="add nmsweep,scale for the theory experiments (recipe curve, paradox)")
+    ap.add_argument("--nm-counts", default="0,3,10,30,100,300,1000")
+    ap.add_argument("--nm-wd", default="", help="comma list of LSTM weight decays for nmsweep")
+    ap.add_argument("--scales", default="0.25,0.5,0.75,1,1.5")
     a = ap.parse_args()
     cfg = dict(n_train=4000, n_val=2000, n_test=2000, n_other=1000, seed=a.seed, force=a.force,
                models=list(L.DETECTORS), sweep_sizes=[500, 2000, 8000, 20000],
-               sweep_prev=[0.1, 0.5, 0.9], nonsig="normal")
+               sweep_prev=[0.1, 0.5, 0.9], nonsig="normal",
+               nm_counts=[int(x) for x in a.nm_counts.split(",")],
+               nm_wd=[float(x) for x in a.nm_wd.split(",") if x],
+               scales=[float(x) for x in a.scales.split(",")])
     if a.quick:
         cfg.update(n_test=1000, n_other=500, sweep_sizes=[500, 2000], sweep_prev=[0.1, 0.5])
         L.DETECTORS["LSTM (raw series)"] = ("raw48", lambda s: L.NumpyLSTMClassifier(
             hidden=32, epochs=12, seed=s))
-    run_suite(ToySource(), a.out, cfg)
+    run_suite(ToySource(), a.out, cfg, steps=tuple(a.steps.split(",")))
     print("\nSlide 12 reference (LSTM): CAP 0.98  P1 0.20  P2 0.73  BIG1 0.91  ASYNC 0.11  "
           "ASYNC2 0.04  UP 0.00  OFF 0.01")
 
