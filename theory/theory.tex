@@ -386,6 +386,23 @@ All checks are in \texttt{theory/theory\_checks.py} (NumPy and SciPy; gradient-d
 \item[C9] Necessary near-miss fraction $p^*(\lambda)$, as in Proposition~\ref{prop:pstar}.
 \end{description}
 
+\subsection*{Pipeline experiments on the toy replica (slide-7 data, LSTM and five other models)}
+Same code path as the real-data runs (\texttt{run\_toy.py}, \texttt{reference\_results/toy\_theory}). Noisy, overlapping-class regime.
+\begin{center}\small
+\begin{tabular}{p{4.2cm}p{7.6cm}p{2.6cm}}
+\toprule
+Prediction & Toy result (LSTM unless stated) & Verdict \\
+\midrule
+Partial-match law (Cor.~\ref{cor:paradox}), from CAP + single-channel rates & P2 predicted $0.58$, measured $0.58$ & holds \\
+Paradox: stronger fault $\Rightarrow$ more partial alarms & scale $\times0.25/0.5/0.75/1/1.5$: CAP $0.09/0.27/0.74/0.96/1.00$, P2 $0.05/0.10/0.34/0.59/0.94$; law $0.05/0.12/0.37/0.66/0.89$. Same pattern for all five models. & holds \\
+Capped evidence ignores one loud channel (Prop.~\ref{prop:cap}) & BIG1 flagged, no fix: capped CI $0.08$ vs uncapped CI $0.99$ & holds \\
+Capped CI is fixable, uncapped is not & after all-but-one negatives P2: capped $0.37\to0.22$, uncapped $0.72\to0.35$ & partial \\
+Recipe: more near-misses $\Rightarrow$ fewer partial alarms & P2 by near-misses per type $0/30/100/300/1000$: $0.58/0.47/0.35/0.18/0.16$ (CAP $0.95\to0.86$); with weight decay $10^{-3}$: $0.53\to0.14$ & holds; needs $\sim$300/type here \\
+Helly: pair-staggered negatives teach timing, fully staggered do not & PAIRSTAG flagged: $0.30$ before; $0.17$ with fully staggered negatives; $0.06$ with pair-staggered & direction holds, effect smaller than in C6b \\
+\bottomrule
+\end{tabular}
+\end{center}
+
 %=====================================================================
 \section{How this revises the earlier proposal (Lemmas 1--4)}\label{sec:proposal}
 The earlier ICLR draft framed the problem as gradient descent choosing between a narrow $k$-junta and a broad correlate, with four lemmas: effective sample size under mixing (L1), max-margin preference for the broad rule (L2), flatness and stability (L3), and a predicted gap scaling as $\sqrt{(1+\rho)/(1-\rho)}/\sqrt n$ (L4). Its synthetic results confirmed L1, found the learned rule to be \emph{additive rather than either/or}, could not establish the L4 scaling (no correlation over five seeds), found a weight-norm confound in L3, and found that a KL-leash fixed the probed trigger but did not generalise to an unprobed one. The present theory explains each of these.

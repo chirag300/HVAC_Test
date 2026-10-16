@@ -1,0 +1,191 @@
+{
+  "per_type=0": {
+    "MLP (raw series)": {
+      "NORMAL": 0.008,
+      "CAP": 0.944,
+      "P2": 0.6015
+    },
+    "LSTM (raw series)": {
+      "NORMAL": 0.0095,
+      "CAP": 0.9515,
+      "P2": 0.581
+    },
+    "Channel-indep. (raw series)": {
+      "NORMAL": 0.007,
+      "CAP": 0.966,
+      "P2": 0.7285
+    },
+    "Capped CI (raw series)": {
+      "NORMAL": 0.009,
+      "CAP": 0.916,
+      "P2": 0.4835
+    },
+    "LSTM wd=0.001": {
+      "NORMAL": 0.0145,
+      "CAP": 0.9345,
+      "P2": 0.5305
+    }
+  },
+  "per_type=3": {
+    "MLP (raw series)": {
+      "NORMAL": 0.0075,
+      "CAP": 0.922,
+      "P2": 0.5465
+    },
+    "LSTM (raw series)": {
+      "NORMAL": 0.01,
+      "CAP": 0.9295,
+      "P2": 0.505
+    },
+    "Channel-indep. (raw series)": {
+      "NORMAL": 0.011,
+      "CAP": 0.9695,
+      "P2": 0.7125
+    },
+    "Capped CI (raw series)": {
+      "NORMAL": 0.0075,
+      "CAP": 0.9015,
+      "P2": 0.441
+    },
+    "LSTM wd=0.001": {
+      "NORMAL": 0.01,
+      "CAP": 0.917,
+      "P2": 0.48
+    }
+  },
+  "per_type=10": {
+    "MLP (raw series)": {
+      "NORMAL": 0.0065,
+      "CAP": 0.92,
+      "P2": 0.5445
+    },
+    "LSTM (raw series)": {
+      "NORMAL": 0.009,
+      "CAP": 0.9515,
+      "P2": 0.579
+    },
+    "Channel-indep. (raw series)": {
+      "NORMAL": 0.0095,
+      "CAP": 0.972,
+      "P2": 0.7225
+    },
+    "Capped CI (raw series)": {
+      "NORMAL": 0.01,
+      "CAP": 0.908,
+      "P2": 0.4035
+    },
+    "LSTM wd=0.001": {
+      "NORMAL": 0.0055,
+      "CAP": 0.922,
+      "P2": 0.4905
+    }
+  },
+  "per_type=30": {
+    "MLP (raw series)": {
+      "NORMAL": 0.0055,
+      "CAP": 0.905,
+      "P2": 0.491
+    },
+    "LSTM (raw series)": {
+      "NORMAL": 0.0125,
+      "CAP": 0.94,
+      "P2": 0.4655
+    },
+    "Channel-indep. (raw series)": {
+      "NORMAL": 0.0065,
+      "CAP": 0.9635,
+      "P2": 0.6505
+    },
+    "Capped CI (raw series)": {
+      "NORMAL": 0.0085,
+      "CAP": 0.89,
+      "P2": 0.4165
+    },
+    "LSTM wd=0.001": {
+      "NORMAL": 0.01,
+      "CAP": 0.916,
+      "P2": 0.3825
+    }
+  },
+  "per_type=100": {
+    "MLP (raw series)": {
+      "NORMAL": 0.0085,
+      "CAP": 0.918,
+      "P2": 0.477
+    },
+    "LSTM (raw series)": {
+      "NORMAL": 0.012,
+      "CAP": 0.909,
+      "P2": 0.352
+    },
+    "Channel-indep. (raw series)": {
+      "NORMAL": 0.013,
+      "CAP": 0.966,
+      "P2": 0.5865
+    },
+    "Capped CI (raw series)": {
+      "NORMAL": 0.0105,
+      "CAP": 0.8815,
+      "P2": 0.323
+    },
+    "LSTM wd=0.001": {
+      "NORMAL": 0.0085,
+      "CAP": 0.9115,
+      "P2": 0.31
+    }
+  },
+  "per_type=300": {
+    "MLP (raw series)": {
+      "NORMAL": 0.0095,
+      "CAP": 0.894,
+      "P2": 0.33
+    },
+    "LSTM (raw series)": {
+      "NORMAL": 0.01,
+      "CAP": 0.851,
+      "P2": 0.185
+    },
+    "Channel-indep. (raw series)": {
+      "NORMAL": 0.01,
+      "CAP": 0.944,
+      "P2": 0.4175
+    },
+    "Capped CI (raw series)": {
+      "NORMAL": 0.0105,
+      "CAP": 0.864,
+      "P2": 0.2735
+    },
+    "LSTM wd=0.001": {
+      "NORMAL": 0.0095,
+      "CAP": 0.841,
+      "P2": 0.1755
+    }
+  },
+  "per_type=1000": {
+    "MLP (raw series)": {
+      "NORMAL": 0.0045,
+      "CAP": 0.8465,
+      "P2": 0.189
+    },
+    "LSTM (raw series)": {
+      "NORMAL": 0.0105,
+      "CAP": 0.8585,
+      "P2": 0.1645
+    },
+    "Channel-indep. (raw series)": {
+      "NORMAL": 0.0105,
+      "CAP": 0.92,
+      "P2": 0.3155
+    },
+    "Capped CI (raw series)": {
+      "NORMAL": 0.01,
+      "CAP": 0.875,
+      "P2": 0.255
+    },
+    "LSTM wd=0.001": {
+      "NORMAL": 0.009,
+      "CAP": 0.8185,
+      "P2": 0.136
+    }
+  }
+}

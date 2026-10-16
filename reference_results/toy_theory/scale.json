@@ -1,0 +1,162 @@
+{
+  "scale=0.25": {
+    "LogReg (stats)": {
+      "NORMAL": 0.01,
+      "CAP": 0.1125,
+      "P1": 0.021,
+      "P2": 0.0615
+    },
+    "MLP (raw series)": {
+      "NORMAL": 0.0185,
+      "CAP": 0.0875,
+      "P1": 0.0235,
+      "P2": 0.0505
+    },
+    "LSTM (raw series)": {
+      "NORMAL": 0.0135,
+      "CAP": 0.0885,
+      "P1": 0.026,
+      "P2": 0.0495
+    },
+    "Channel-indep. (raw series)": {
+      "NORMAL": 0.011,
+      "CAP": 0.0885,
+      "P1": 0.023,
+      "P2": 0.055
+    },
+    "Capped CI (raw series)": {
+      "NORMAL": 0.01,
+      "CAP": 0.055,
+      "P1": 0.019,
+      "P2": 0.037
+    }
+  },
+  "scale=0.5": {
+    "LogReg (stats)": {
+      "NORMAL": 0.0095,
+      "CAP": 0.4275,
+      "P1": 0.051,
+      "P2": 0.1805
+    },
+    "MLP (raw series)": {
+      "NORMAL": 0.014,
+      "CAP": 0.393,
+      "P1": 0.049,
+      "P2": 0.162
+    },
+    "LSTM (raw series)": {
+      "NORMAL": 0.0095,
+      "CAP": 0.2715,
+      "P1": 0.0335,
+      "P2": 0.1045
+    },
+    "Channel-indep. (raw series)": {
+      "NORMAL": 0.0105,
+      "CAP": 0.425,
+      "P1": 0.0525,
+      "P2": 0.179
+    },
+    "Capped CI (raw series)": {
+      "NORMAL": 0.0085,
+      "CAP": 0.2815,
+      "P1": 0.032,
+      "P2": 0.11
+    }
+  },
+  "scale=0.75": {
+    "LogReg (stats)": {
+      "NORMAL": 0.011,
+      "CAP": 0.8295,
+      "P1": 0.1325,
+      "P2": 0.466
+    },
+    "MLP (raw series)": {
+      "NORMAL": 0.0105,
+      "CAP": 0.733,
+      "P1": 0.0785,
+      "P2": 0.3315
+    },
+    "LSTM (raw series)": {
+      "NORMAL": 0.018,
+      "CAP": 0.744,
+      "P1": 0.0835,
+      "P2": 0.335
+    },
+    "Channel-indep. (raw series)": {
+      "NORMAL": 0.0125,
+      "CAP": 0.81,
+      "P1": 0.1015,
+      "P2": 0.4085
+    },
+    "Capped CI (raw series)": {
+      "NORMAL": 0.01,
+      "CAP": 0.6875,
+      "P1": 0.056,
+      "P2": 0.258
+    }
+  },
+  "scale=1": {
+    "LogReg (stats)": {
+      "NORMAL": 0.01,
+      "CAP": 0.977,
+      "P1": 0.226,
+      "P2": 0.758
+    },
+    "MLP (raw series)": {
+      "NORMAL": 0.0095,
+      "CAP": 0.942,
+      "P1": 0.1395,
+      "P2": 0.5565
+    },
+    "LSTM (raw series)": {
+      "NORMAL": 0.0175,
+      "CAP": 0.964,
+      "P1": 0.1285,
+      "P2": 0.589
+    },
+    "Channel-indep. (raw series)": {
+      "NORMAL": 0.015,
+      "CAP": 0.973,
+      "P1": 0.2205,
+      "P2": 0.7165
+    },
+    "Capped CI (raw series)": {
+      "NORMAL": 0.0095,
+      "CAP": 0.931,
+      "P1": 0.0915,
+      "P2": 0.478
+    }
+  },
+  "scale=1.5": {
+    "LogReg (stats)": {
+      "NORMAL": 0.0135,
+      "CAP": 1.0,
+      "P1": 0.5935,
+      "P2": 0.9965
+    },
+    "MLP (raw series)": {
+      "NORMAL": 0.0105,
+      "CAP": 0.999,
+      "P1": 0.279,
+      "P2": 0.8605
+    },
+    "LSTM (raw series)": {
+      "NORMAL": 0.017,
+      "CAP": 0.9985,
+      "P1": 0.388,
+      "P2": 0.9445
+    },
+    "Channel-indep. (raw series)": {
+      "NORMAL": 0.0105,
+      "CAP": 0.9995,
+      "P1": 0.4335,
+      "P2": 0.9665
+    },
+    "Capped CI (raw series)": {
+      "NORMAL": 0.0105,
+      "CAP": 0.9985,
+      "P1": 0.167,
+      "P2": 0.915
+    }
+  }
+}

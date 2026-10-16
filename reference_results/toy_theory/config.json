@@ -1,0 +1,48 @@
+{
+  "n_train": 4000,
+  "n_val": 2000,
+  "n_test": 2000,
+  "n_other": 1000,
+  "seed": 0,
+  "force": true,
+  "models": [
+    "LogReg (stats)",
+    "Random forest (stats)",
+    "Grad. boosting (stats)",
+    "MLP (raw series)",
+    "LSTM (raw series)",
+    "Channel-indep. (raw series)",
+    "Capped CI (raw series)"
+  ],
+  "sweep_sizes": [
+    500,
+    2000,
+    8000,
+    20000
+  ],
+  "sweep_prev": [
+    0.1,
+    0.5,
+    0.9
+  ],
+  "nonsig": "normal",
+  "nm_counts": [
+    0,
+    3,
+    10,
+    30,
+    100,
+    300,
+    1000
+  ],
+  "nm_wd": [
+    0.001
+  ],
+  "scales": [
+    0.25,
+    0.5,
+    0.75,
+    1.0,
+    1.5
+  ]
+}
