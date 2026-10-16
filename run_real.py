@@ -20,6 +20,12 @@ Variants (--nonsig):
          Partial-match constructs keep the real non-signature deviations.
   both   run clean, then real.
 Every step is cached (JSON); re-running resumes. --force recomputes.
+
+Steps (--steps, comma list): main, ident, sweep, fix, fixtime, fixboth, fixhelly (default),
+plus the theory experiments (opt-in, see theory/theory.pdf):
+  nmsweep  recipe curve: partial false alarms vs near-miss negatives per type (--nm-counts,
+           --nm-wd adds LSTM weight-decay variants)
+  scale    signal-strength sweep, fault deviation x s (--scales): detectability paradox
 """
 import argparse
 import re
@@ -60,7 +66,12 @@ def main():
     ap.add_argument("--n-other", type=int, default=300, help="windows per unknown-fault file")
     ap.add_argument("--sweep-sizes", default="500,2000,8000")
     ap.add_argument("--sweep-prev", default="0.1,0.5,0.9")
-    ap.add_argument("--steps", default="main,ident,sweep,fix,fixtime,fixboth")
+    ap.add_argument("--steps", default="main,ident,sweep,fix,fixtime,fixboth,fixhelly")
+    ap.add_argument("--nm-counts", default="0,3,10,30,100,300,1000",
+                    help="near-miss negatives per type for the nmsweep step")
+    ap.add_argument("--nm-wd", default="", help="comma list of LSTM weight decays for nmsweep")
+    ap.add_argument("--scales", default="0.25,0.5,0.75,1,1.5",
+                    help="fault-deviation multipliers for the scale step")
     ap.add_argument("--block", default="7D", help="train/val/test split block length (pandas offset)")
     ap.add_argument("--models", default="all", help="comma list of model names or 'all'")
     ap.add_argument("--lstm-epochs", type=int, default=30)
@@ -101,7 +112,10 @@ def main():
                    force=a.force, models=models, nonsig=v,
                    sweep_sizes=[int(x) for x in a.sweep_sizes.split(",")],
                    sweep_prev=[float(x) for x in a.sweep_prev.split(",")],
-                   target=src.target, signature=[src.channel_names[c] for c in src.sig])
+                   target=src.target, signature=[src.channel_names[c] for c in src.sig],
+                   nm_counts=[int(x) for x in a.nm_counts.split(",")],
+                   nm_wd=[float(x) for x in a.nm_wd.split(",") if x],
+                   scales=[float(x) for x in a.scales.split(",")])
         safe = re.sub(r"[^A-Za-z0-9_.-]+", "_", src.target)[:80]
         run_suite(src, f"{a.out}/{safe}/{v}", cfg, steps=tuple(a.steps.split(",")))
     print(f"\nDone in {(time.time() - t0) / 60:.1f} min")

@@ -13,14 +13,17 @@ CPU Python with numpy, pandas, scikit-learn, matplotlib.
 | File | What it does |
 |---|---|
 | `lstm_numpy.py` | NumPy LSTM classifier (BPTT + Adam, grad clipping, early stopping). `python lstm_numpy.py` = gradient check |
-| `shortcut_lib.py` | Window stats, the splice constructs (CAP, P1..Pk-1, BIG1, ASYNC, ASYNC2, UP, OFF), the true AND rule, detectors, 1%-FPR calibration |
+| `shortcut_lib.py` | Window stats, the splice constructs (CAP, P1..Pk-1, BIG1, ASYNC, ASYNC2, PAIRSTAG, UP, OFF), the true AND rule, detectors, 1%-FPR calibration, theory predictions |
 | `experiments.py` | The test battery + hypothesis verdicts + REPORT.md + figures (shared by toy, LBNL, NIST) |
 | `run_toy.py` | Slide-7 toy replica through the same code — check you reproduce slide 12 first |
 | `download.py` | Downloads + unpacks LBNL SDAHU / RTU / FCU and NIST heat-pump data into `data/raw/` |
 | `real_data.py` | Schema-agnostic LBNL loader; pairs each fault CSV with its fault-free twin; builds windows |
 | `run_real.py` | Runs the battery on one LBNL dataset |
 | `run_nist.py` | Tabular version for the NIST heat-pump spreadsheet (no time axis → no LSTM / ASYNC) |
-| `ci_numpy.py` | Channel-independent detector (shared per-channel encoder + linear head, additive across channels), Adam/backprop in NumPy, gradient check |
+| `ci_numpy.py` | Channel-independent detector (shared per-channel encoder + linear head, additive across channels) and its capped variant (bounded per-channel evidence), Adam/backprop in NumPy, gradient checks |
+| `theory/theory.tex`, `theory/theory.pdf` | Theory notes: statements and full proofs (why the broad rule is learned, composite null, near-miss supervision, Helly timing negatives, sample counts) |
+| `theory/theory_checks.py` | Numerical checks C1–C9 of every theorem (`python theory/theory_checks.py [C1 C5 ...]`) |
+| `theory/make_figures.py` | Theory figures from `theory/checks_out/results.json` |
 | `tep_to_csv.py` | Tennessee Eastman (Braatz runs) -> LBNL-style CSVs for `run_real.py` (see TEP note below) |
 | `make_fake_lbnl.py` | Fake dataset in LBNL layout with a known answer, for smoke tests |
 | `run_all.sh`, `smoke_test.sh` | One-shot pipelines |
@@ -102,7 +105,8 @@ signals **W** and the fault's exact effect **D = faulty − normal**. Every test
 | Capacitor: ch 0,1,2 drop together from random onset | Target fault's real deviation on its top-k signature channels, from a random onset (t = 10–25 of 48) |
 | P1, P2 | Real deviation kept on only 1 or k−1 signature channels |
 | BIG1 | One signature channel's real deviation ×3 |
-| ASYNC / ASYNC2 | Each channel's real deviation in its own time segment / short separate dips |
+| ASYNC / ASYNC2 | Each channel's real deviation in its own time segment / short separate dips (fully staggered: no two channels at once) |
+| PAIRSTAG | One pair of signature channels never shifted at the same time, every other pair overlaps; equal durations (the "Helly" boundary case) |
 | UP | Deviation sign flipped |
 | OFF | Deviation moved onto k unrelated (|corr| < 0.5) channels |
 | "Other faults exist, unlabeled" | Every other fault file, never seen in training, bucketed by how many signature channels it actually moves |
@@ -130,19 +134,40 @@ scaled by its own residual noise, and requires all of them up in the same 8-step
 It is a noise-floor reference: with slow, autocorrelated residuals it can pass some partial
 matches by chance, so H2 is judged as a gap (model − rule), not against zero.
 
-## Targeted-negative variants and the channel-independent model
+## Targeted-negative variants and the channel-independent models
 
-Each run trains three fixes, all with the same number of extra label-0 windows (n_train/2):
+Each run trains four fixes, all with the same number of extra label-0 windows (n_train/2):
 
 | Step | Negatives added | Tests |
 |---|---|---|
 | `fix` | all-but-one: k−1 signature channels move | channel identifiability (H5) |
-| `fixtime` | staggered: all k move, but at different times (ASYNC, ASYNC2) | time identifiability (H5t) |
-| `fixboth` | half of each | both (H5b) |
+| `fixtime` | fully staggered: all k move, but at different times (ASYNC, ASYNC2) | time identifiability (H5t) |
+| `fixboth` | all-but-one + fully staggered | both (H5b) |
+| `fixhelly` | all-but-one + pair-staggered (PAIRSTAG) | theory: the minimal timing negatives (H5h) |
 
 `Channel-indep. (raw series)` is additive across channels by construction, like
 channel-independent time-series models with a linear head. H8 checks the theory's prediction
 that it stays fooled by partial matches after the channel fix while the LSTM does not.
+`Capped CI (raw series)` is the same model with each channel's evidence bounded (tanh); the
+theory says this one *can* represent the AND, so it should be fixable (H9) and should not be
+fooled by one very loud channel (BIG1) even without a fix.
+
+## Theory experiments (opt-in steps)
+
+```bash
+python run_toy.py  --out results/toy_theory --steps main,ident,fix,fixtime,fixboth,fixhelly,nmsweep,scale --nm-wd 0.001
+python run_real.py --data data/raw/fcu --out results/fcu --steps main,fix,fixtime,fixhelly,nmsweep,scale [same flags as before]
+```
+
+| Step | What it does | Theory |
+|---|---|---|
+| `nmsweep` | Same normal-vs-fault training set, plus 0/3/10/30/100/300/1000 all-but-one negatives per type (`--nm-counts`; `--nm-wd` adds LSTM weight-decay variants) → `fig_recipe_curve.png` | how many near-misses are needed (HR) |
+| `scale` | Fault deviation × s in training and test (`--scales`) → `fig_paradox.png` | detectability paradox (HP) |
+
+Every REPORT.md now also has a "Theory check" table: each model's partial-match rates next to
+the rates the theory predicts from its detection rate alone and from its detection +
+single-channel rates (HA). Close agreement means the model behaves like a sum-of-evidence
+detector.
 
 ## Tennessee Eastman (TEP)
 
@@ -171,6 +196,11 @@ random seeds, so their deviations are not exact counterfactuals.
 | H5t / H5b | Staggered negatives fix simultaneity; both kinds fix both | ASYNC/ASYNC2 (and P{k−1}) halve, CAP drops ≤ 0.05 |
 | H8 | Additive (channel-independent) models stay fooled after the channel fix | channel-indep. P{k−1} ≥ LSTM's + 0.10 after `fix` |
 | H7 (per model) | Most fleet false alarms come from unknown faults (slide 13) | ≥ 50% in the 89/1/10 mix; INCONCLUSIVE if unknown faults are flagged < 5% (share of tiny numbers) |
+| HA | Partial-match rate follows the additive law | measured P{k−1} within 0.15 of the law's prediction from CAP + single-channel rates |
+| H5h | Pair-staggered negatives teach simultaneity, fully staggered do not | PAIRSTAG halves with `fixhelly`, and stays ≥ 0.15 higher with `fixtime` |
+| H9 | Capped per-channel evidence can be fixed, uncapped cannot | capped P{k−1} after `fix` ≤ uncapped − 0.10 and ≤ half its own before |
+| HP | Stronger target fault → more partial false alarms | Spearman(scale, P{k−1}) ≥ 0.8 and a rise ≥ 0.10; INCONCLUSIVE if saturated |
+| HR | More near-miss negatives → fewer partial false alarms | Spearman ≤ −0.8 and P{k−1} at least halves; reports the count per type where it halves |
 
 H6 and H7 are the new evidence the toy could not give: they use real, different faults rather
 than constructs. A result that is NOT SUPPORTED is still informative — e.g. if the target's
