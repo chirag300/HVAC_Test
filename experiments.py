@@ -50,11 +50,15 @@ FIX_VARIANTS = {
     "fixboth": [("ALLBUT1", 0.25), ("ASYNC", 0.125), ("ASYNC2", 0.125)],
     # theory (Helly): the minimal time negatives are pair-staggered, not fully staggered
     "fixhelly": [("ALLBUT1", 0.25), ("PAIRSTAG", 0.25)],
+    # ablation (outlier-exposure-style): same number of generic negatives that are NOT near-misses
+    # (the fault's deviation moved onto unrelated channels)
+    "fixoe": [("OFF", 0.5)],
 }
 FIX_LABEL = {"fix": "all-but-one (channel) negatives", "fixtime": "fully staggered (time) negatives",
              "fixboth": "all-but-one + fully staggered negatives",
-             "fixhelly": "all-but-one + pair-staggered (Helly) negatives"}
-FIX_STEPS = ("fixtime", "fixboth", "fixhelly")
+             "fixhelly": "all-but-one + pair-staggered (Helly) negatives",
+             "fixoe": "generic off-signature negatives (outlier-exposure ablation)"}
+FIX_STEPS = ("fixtime", "fixboth", "fixhelly", "fixoe")
 
 
 def _log(msg):
@@ -336,8 +340,10 @@ def theory_predictions(main):
         for m in range(1, k):
             row[f"P{m}"] = r.get(f"P{m}")
             row[f"P{m} pred (CAP only)"] = L.predict_from_detection(r["CAP"], m / k, n=n)
+            # m = 1 is not a test: the 1-of-k rate predicted from the single-sensor rates is just
+            # their average. The additivity test is m >= 2 (pairs predicted from singles).
             row[f"P{m} pred (CAP+singles)"] = (L.predict_partial_additive(r["CAP"], singles, m, n=n)
-                                               if None not in singles else float("nan"))
+                                               if None not in singles and m >= 2 else float("nan"))
         out[model] = row
     return out
 
@@ -558,7 +564,8 @@ def write_report(src_name, out, main, ident, sweep, fix, cfg, fixes=None, extra=
     tp = theory_predictions(main)
     if any(not np.isnan(r.get(f"P{k - 1} pred (CAP+singles)", float("nan"))) for r in tp.values()):
         pcols = ["CAP"] + [c for m in range(1, k) for c in
-                           (f"P{m}", f"P{m} pred (CAP only)", f"P{m} pred (CAP+singles)")]
+                           ((f"P{m}", f"P{m} pred (CAP only)") if m == 1 else
+                            (f"P{m}", f"P{m} pred (CAP only)", f"P{m} pred (CAP+singles)"))]
         lines += ["## Theory check: partial-match rates predicted from the detection rate", "",
                   "Law (theory/theory.pdf, Cor. 'power-specificity curve'): "
                   "P_m = Phi(r (Phi^-1(CAP) + z) - z), z = Phi^-1(0.99). "
