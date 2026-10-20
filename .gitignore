@@ -5,3 +5,4 @@ data/
 results/
 *.part
 .DS_Store
+paper/synth_run.log
