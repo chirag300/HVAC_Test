@@ -112,15 +112,22 @@ def S2(seeds=3):
             thr2 = tc.calibrate(net2, r.normal(0, sig, (20000, d)))
             flag2 = np.mean([(net2(r.normal(0, sig, (4000, d)) + x) > thr2).mean() for x in nms])
             cap2 = (net2(r.normal(0, sig, (4000, d)) + mu) > thr2).mean()
-            vals.append((pos, rho, 1 - rho / np.sqrt(k), flag, ratio, flag2, cap2))
+            # theorem 5(b) check on the retrained net: R/R_min >= k * gamma/G
+            G2 = fpb - f0b
+            rn2 = net2.path_norm() / (G2 / (delta * np.sqrt(k)))
+            gam2 = min(fpb - net2(x[None])[0] for x in nms) / G2
+            vals.append((pos, rho, 1 - rho / np.sqrt(k), flag, ratio, flag2, cap2, rn2, k * gam2))
         v = np.array(vals)
         row = dict(k=k, linear=(k - 1) / k, pos=ms(v[:, 0]), kappa=ms(v[:, 1]), bound=ms(v[:, 2]),
-                   flag=ms(v[:, 3]), ratio=ms(v[:, 4]), flag_after=ms(v[:, 5]), cap_after=ms(v[:, 6]))
+                   flag=ms(v[:, 3]), ratio=ms(v[:, 4]), flag_after=ms(v[:, 5]), cap_after=ms(v[:, 6]),
+                   rnorm_after=ms(v[:, 7]), kgamma_after=ms(v[:, 8]),
+                   bound_holds=bool(np.all(v[:, 7] >= v[:, 8] - 1e-9)))
         rows.append(row)
         log(f"  k={k}  pos {row['pos'][0]:.3f}±{row['pos'][1]:.3f} (linear {(k-1)/k:.3f}, bound "
             f"{row['bound'][0]:.3f})  κ {row['kappa'][0]:.2f}  flagged {row['flag'][0]:.3f}  "
             f"norm ratio {row['ratio'][0]:.2f}±{row['ratio'][1]:.2f} (k={k})  after: flagged {row['flag_after'][0]:.3f} "
-            f"CAP {row['cap_after'][0]:.3f}")
+            f"CAP {row['cap_after'][0]:.3f}  R/Rmin {row['rnorm_after'][0]:.2f} >= k*gamma/G "
+            f"{row['kgamma_after'][0]:.2f} ({row['bound_holds']})")
     R["S2"] = rows
 
 
