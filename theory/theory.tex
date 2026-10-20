@@ -331,11 +331,14 @@ Let each signature channel be shifted on a nonempty interval $I_j\subseteq[0,T)$
 \end{proof}
 
 \begin{corollary}[Total near-miss types]
-A configuration is a pair $(A,G)$: the set $A\subseteq S$ of shifted signature channels and the overlap graph $G$ on $A$, ordered by $(A,G)\preceq(A',G')$ iff $A\subseteq A'$ and $G\subseteq G'$. The target rule is $\1\{A=S,\ G=K_k\}$. Within rules monotone in this order, identification requires and is achieved by the $k+\binom k2=k(k+1)/2$ maximal non-target configurations: $(S\setminus\{j\},K_{k-1})$ for each $j$ and $(S,K_k-e)$ for each edge $e$.
+Consider the two axes separately: the channel axis (subsets $A\subseteq S$ shifted, all simultaneous) with rules monotone in $A$, and the time axis (all of $S$ shifted, overlap graph $G$) with rules monotone in $G$. A rule is any pair of such rules agreeing at the shared target. Identification then requires and is achieved by the $k$ channel near-misses and the $\binom k2$ one-edge-missing patterns, $k(k+1)/2$ types in total.
 \end{corollary}
 \begin{proof}
-Every non-target $(A,G)$ has either $A\ne S$, and then $(A,G)\preceq(S\setminus\{j\},K_{k-1})$ for some $j\notin A$, or $A=S$ and $G\ne K_k$, and then $(A,G)\preceq(S,K_k-e)$ for a missing edge $e$. Sufficiency follows by monotonicity. Necessity is the argument of Theorems~\ref{thm:teach} and \ref{thm:helly}(b): the up-set indicator of an unlabelled maximal configuration is monotone and differs from the target only there.
+The two axes share only the target configuration, where every rule equals $1$, so the constraints decouple. Apply Theorem~\ref{thm:teach} on the channel axis and Theorem~\ref{thm:helly}(b) on the time axis.
 \end{proof}
+\begin{remark}[Correction to an earlier version]
+An earlier version claimed the same count for rules monotone in the \emph{joint} order $(A,G)\preceq(A',G')$. That necessity claim is false. The channel near-miss $(S\setminus\{j\},K_{S\setminus\{j\}})$ lies below $(S,K_k-\{i,j\})$, so under joint monotonicity the $\binom k2$ pair-staggered negatives alone suffice. The per-axis statement above is the correct one for learners that need not respect the joint order.
+\end{remark}
 
 Check C6b confirms the prediction of Theorem~\ref{thm:helly}(d) with a raw-series network trained by gradient descent. Fully staggered negatives fix fully staggered faults ($0.96\to0.01$) but leave pair-staggered ones at $0.94$. Pair-staggered negatives fix both ($0.00$ and $0.16$). In our real-data pipeline the ``staggered negatives'' were fully staggered, which explains why they did not generalise; the pipeline now has pair-staggered negatives.
 \begin{figure}[t]\centering\includegraphics[width=0.6\linewidth]{figs/fig_helly.pdf}
