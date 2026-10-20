@@ -1,0 +1,241 @@
+\documentclass{article}
+\usepackage{iclr2027_conference,times}
+\input{math_commands.tex}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{booktabs,multirow,graphicx,xcolor,enumitem}
+\usepackage[ruled,vlined,linesnumbered]{algorithm2e}
+\usepackage{cleveref}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}{Assumption}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+\crefname{assumption}{Assumption}{Assumptions}
+
+\renewcommand{\1}{\mathbf{1}}
+\newcommand{\cN}{\mathcal{N}}
+\newcommand{\Lip}{\mathrm{Lip}}
+\newcommand{\relu}{\mathrm{relu}}
+\newcommand{\NM}{\mathsf{NM}}
+\newcommand{\PS}{\mathsf{PS}}
+
+\title{Sum Instead of And: Why Detectors Trained on Normal-vs-Fault Data Flag Look-Alikes, and the Minimal Supervision That Fixes It}
+
+\author{Anonymous authors\\Paper under double-blind review}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A detector trained to separate normal operation from one target condition in multivariate time series can reach near-perfect accuracy and still raise many false alarms on other conditions that reproduce only part of the target's signature. We show that when the target is a \emph{conjunction}, $k$ sensors shifting together, the cause is not a spurious feature but the logical form of the learned rule. For the normal-vs-target training task the Neyman--Pearson-optimal detector is additive across sensors, so more data and class rebalancing converge to it. In the well-separated regime, any norm-limited network places near-miss patterns close to the target, and pushing all $k$ of them back to the normal score requires at least $k$ times the minimum path norm. The additive rule obeys a closed-form false-alarm law that predicts how often each partial look-alike is flagged from the detector's own detection rate, and implies a \emph{detectability paradox}: the better the target is detected, the more look-alikes are flagged. Deployment is a test against a composite null of all partial look-alikes. Against look-alikes of unbounded strength, additive and uncapped channel-independent detectors have no valid threshold with nonzero power, while the intersection-union test, which capped-evidence detectors can represent, is valid and misses at most $k$ times as often as the best valid detector. We characterize the supervision that identifies the conjunction: $k$ channel near-misses and, by Helly's theorem on the line, $\binom{k}{2}$ pair-staggered temporal near-misses, at a per-type sample cost governed by the weakest sensor. This predicts that ``one after another'' negatives, a natural time augmentation, do not teach simultaneity. Multi-seed synthetic experiments confirm the law, the separated-regime bound and the timing prediction. On counterfactually spliced fault windows from public building-system simulations, pair-staggered negatives teach simultaneity where fully staggered ones do not, and channel near-misses cut fan-coil look-alike alarms, including on never-seen faults.
+\end{abstract}
+
+%=====================================================================
+\section{Introduction}
+\label{sec:intro}
+Many monitoring problems ask whether a specific condition is present in a multivariate time series: a failing capacitor in a heat pump, a stuck valve in an air-handling unit, a fault in a chemical process. The standard recipe trains a classifier on windows labelled \emph{normal} or \emph{target condition}, sets an alarm threshold for a small false-alarm rate on normal data, and deploys \citep{katipamula2005,zhao2019,venkatasubramanian2003}. In deployment the detector also sees many conditions it was never trained on. Some of them move a \emph{subset} of the sensors that define the target. A detector that is excellent on the training task can then become a source of false alarms. On a public building benchmark (\cref{sec:exp}), an LSTM trained on one fan-coil fault detects it in 100\% of windows at a 1\% false-alarm budget. Yet it flags 63--79\% of windows from other, never-seen faults that move one or two of the fault's three signature sensors, against 13--36\% for a hand-written rule requiring all three.
+
+\paragraph{The question.} Why does training produce a rule that is broader than the condition, and what is the least supervision that fixes it? Prior work on shortcut learning explains failures in which a model relies on a \emph{spurious} feature correlated with the label \citep{geirhos2020,shah2020,hermann2024}. Here no spurious feature is needed. The model uses the right sensors and combines them with the wrong logic: a \emph{sum} of per-sensor evidence instead of an \emph{and}. Throughout, picture three warning lights that always switch on together for the target. Training shows only ``all off'' (normal) and ``all on'' (target). For that data, counting lit lights is as good as requiring all three. A condition that lights two of them is never shown, so nothing in training penalizes calling it the target.
+
+\paragraph{Contributions.}
+\begin{enumerate}[leftmargin=*,itemsep=1pt,topsep=2pt]
+\item \textbf{The broad rule is the training optimum (\cref{thm:np}).} Under a Gaussian conjunctive-signature model, the Bayes and Neyman--Pearson (NP) detector for normal vs.\ target is linear, hence additive across independent sensors. It does not depend on class prevalence, and every cross-entropy-consistent learner converges to it. More data and rebalancing therefore cannot remove the failure.
+\item \textbf{A closed-form false-alarm law and a detectability paradox (\cref{thm:law,cor:paradox}).} Any other condition is flagged with probability $\Phi(D\,r-z_\alpha)$, where $r$ is the share of the target's signal it reproduces. Written in terms of the detection rate $\beta$, look-alike false alarms increase with $\beta$ and tend to one as $\beta\to1$.
+\item \textbf{Deployment as a composite null (\cref{thm:composite}).} Against all partial look-alikes, additive detectors lose a $\sqrt{k}$ factor in effective signal, or all power when look-alikes can be arbitrarily strong. This includes channel-independent models with unbounded per-channel terms, a design common in time-series foundation models \citep{nie2023,goswami2024}. The intersection-union test, which capped-evidence detectors can represent, is valid, and its miss probability is within a factor $k$ of the smallest possible.
+\item \textbf{Why norm-seeking training prefers the sum (\cref{thm:sep}).} When classes are separated, any network with Lipschitz constant $\kappa$ times the minimum places each near-miss at least $1-\kappa/\sqrt{k}$ of the way to the target. Rejecting all $k$ near-misses costs at least $k$ times the minimum path norm.
+\item \textbf{Minimal supervision (\cref{thm:teach,prop:samples}).} $k$ channel near-misses and $\binom{k}{2}$ pair-staggered temporal near-misses are necessary and sufficient to identify the rule within per-axis monotone classes. The temporal count follows from Helly's theorem on the line, which also implies that fully staggered negatives do not identify simultaneity. A per-type sample bound $32(\sigma/\Delta)^2\log(4k/\eta)$ makes the weakest sensor the bottleneck.
+\item \textbf{Evidence.} Multi-seed synthetic experiments match the law to within $0.01$ for logistic regression and $0.03$ for a two-layer net, and confirm the separated-regime bound and the Helly prediction. In a toy replica, generic outlier negatives leave look-alike alarms unchanged while near-misses remove them. On counterfactually spliced faults from public building-system simulations \citep{granderson2023}, the timing prediction holds on all three fan-coil runs, and look-alike alarms rise with detection where detection is not saturated.
+\end{enumerate}
+Proofs are in \cref{app:proofs}. Experimental details and further results are in \cref{app:exp,app:more}.
+
+%=====================================================================
+\section{Related work}
+\label{sec:related}
+\paragraph{Shortcut learning and simplicity bias.} Networks often rely on easy, label-correlated features that fail out of distribution \citep{geirhos2020,shah2020}. Mechanisms include gradient starvation \citep{pezeshki2021}, feature availability and predictivity \citep{hermann2020,hermann2024}, parameter-space volume \citep{scimeca2022}, representation biases \citep{lampinen2024}, low-dimensional projections in one-hidden-layer nets \citep{morwani2023,tsoy2024} and NTK eigenstructure \citep{lim2025}. Underspecification shows that many predictors fit the training data and differ out of distribution \citep{damour2022}. These analyses contrast one \emph{core} with one \emph{spurious} feature. In our setting every feature is causal. What is underdetermined is how the features combine, and the out-of-distribution inputs are partial look-alikes of the target rather than background shifts.
+
+\paragraph{Implicit bias and norms.} Gradient descent on separable data converges in direction to max-margin or KKT solutions for linear and homogeneous models \citep{soudry2018,lyu2020,ji2020,chizat2020}. Small-initialization two-layer leaky-ReLU nets on linearly separable symmetric data converge to the \emph{linear} max-margin classifier \citep{lyu2021}. Weight decay acts as a path- or representation-cost penalty \citep{neyshabur2015,savarese2019,ongie2020}. We use these facts only through a norm-to-Lipschitz bound. This yields statements that hold for any trained network in terms of a measurable constant (\cref{thm:sep}), rather than a convergence theorem.
+
+\paragraph{Learning interactions.} Parities and high-order sparse functions are hard for gradient methods \citep{barak2022,abbe2022}, and interaction detection from trained weights is studied in \citet{tsang2018}. Additive models are a classical interpretable class \citep{hastie1990,agarwal2021}. Our conjunction is low-order and easy to represent. The obstacle is identifiability from normal-vs-target labels, not computation.
+
+\paragraph{Robust training and counterfactual supervision.} Group-robust methods need group labels or error-based proxies \citep{sagawa2020,liu2021jtt,kirichenko2023}, and invariance methods need environments \citep{arjovsky2019}. When the training error is zero, as in our separated regime, error-upweighting has nothing to upweight. Counterfactual or contrast examples and hard negatives improve local decision boundaries \citep{kaushik2020,gardner2020,teney2020,robinson2021}. We give a theory of \emph{which} contrasts identify a conjunction and how many are needed. Teaching sets \citep{goldman1995,zilles2011} and membership queries for conjunctions \citep{angluin1988} are the classical analogues for the channel part. To our knowledge the temporal part (\cref{thm:teach}(b)) is new.
+
+\paragraph{Open-set and out-of-distribution detection.} Open-set recognition and OOD detection flag inputs unlike the training classes \citep{scheirer2013,hendrycks2017,yang2024}. Outlier exposure trains on generic auxiliary outliers \citep{hendrycks2019}, and good closed-set classifiers tend to be good open-set detectors \citep{vaze2022}. Our paradox concerns a different population: look-alikes that share the target's features. For those, better closed-set detection provably \emph{increases} false alarms, and generic outliers carry no identifying information (\cref{sec:exp}).
+
+\paragraph{Multivariate time series and fault detection.} Deep detectors for multivariate time series include recurrent, graph and transformer models \citep{hundman2018,su2019,zhao2020,deng2021,xu2022,tuli2022}, and benchmark practice has been criticized \citep{wu2023,kim2022,schmidl2022}. Channel independence trades capacity for robustness in forecasting \citep{nie2023,han2024} and underlies several foundation models \citep{goswami2024,das2024,ansari2024}. Multi-sensor change detection targets changes in an unknown \emph{subset} of sensors \citep{xie2013,page1954}, which is the opposite of requiring all $k$. Building and process fault detection and diagnosis \citep{katipamula2005,kim2018,zhao2019,downs1993} motivate our setting. The statistical tools we use are NP testing \citep{neyman1933,lehmann2005}, intersection-union tests \citep{berger1982,berger1996} and Helly's theorem \citep{helly1923}.
+
+%=====================================================================
+\section{Problem formulation}
+\label{sec:setup}
+A window is $X\in\R^{T\times C}$ ($T$ steps, $C$ sensors). We write $x=\mathrm{vec}(X)\in\R^{d}$ with $d=TC$. The target condition has a \emph{signature} $S\subseteq[C]$, $|S|=k\ge2$, with directions $s_j\in\{\pm1\}$, shifts $\delta_j>0$ and active intervals $I_j\subseteq[T]$:
+\begin{equation}
+X = W + G,\qquad G_{tj}=s_j\delta_j\1[t\in I_j]\,\1[j\in S],\qquad g=\mathrm{vec}(G),
+\label{eq:model}
+\end{equation}
+where $W$ is the normal process. The target is \emph{simultaneous} if all $I_j$ equal one interval $I$. Other conditions are modelled by other patterns $h\in\R^d$. The ones that matter are \emph{partial} patterns that keep the target's shift on a strict subset $A\subsetneq S$ (\emph{channel near-misses} when $|A|=k-1$), and patterns that shift all of $S$ with non-simultaneous intervals (\emph{temporal near-misses}).
+
+\begin{assumption}[Gaussian location model]\label{ass:gauss}
+$W\sim\cN(0,\Sigma)$ with $\Sigma\succ0$. Condition $h$ produces $x\sim\cN(h,\Sigma)$; normal is $h=0$ and the target is $h=g$.
+\end{assumption}
+
+We write $\Phi$ for the standard normal CDF and $z_\alpha=\Phi^{-1}(1-\alpha)$, and define
+$D^2=g^\top\Sigma^{-1}g$ (target detectability) and $r(h)=g^\top\Sigma^{-1}h/D^2$ (the share of the target's signal that $h$ reproduces). If sensors are independent ($\Sigma$ block-diagonal across channels) and $h=g\odot\1_A$, then $r=\sum_{j\in A}D_j^2/D^2$ with $D_j^2=g_j^\top\Sigma_{jj}^{-1}g_j$. A detector $\phi$ is \emph{$\alpha$-calibrated} if it flags a fraction $\alpha$ of normal windows. This matches standard practice and all our experiments.
+
+\paragraph{Two questions, two nulls.} Training data pose the \emph{simple} test $H_0\!:\!h=0$ vs.\ $H_1\!:\!h=g$. Deployment poses a \emph{composite} test: the target vs.\ normal \emph{or} any look-alike. For a shift statistic $a\in\R^k$ on the signature sensors (\cref{sec:composite}) we write the overlap null as $\mathcal{N}(M)=\{\cN(\mu,\Sigma_S):\mathrm{supp}(\mu)\subsetneq S,\ 0\le\mu_j\le M_j\}$. A detector is \emph{deployment-valid} at level $\alpha$ if its false-alarm rate is at most $\alpha$ under normal and under every member of $\mathcal{N}(M)$.
+
+%=====================================================================
+\section{Theory}
+\label{sec:theory}
+\subsection{The training optimum is additive, and what it does to look-alikes}
+\label{sec:overlap}
+\begin{theorem}[Training-optimal detector]\label{thm:np}
+Under \cref{ass:gauss} with training prevalence $\pi\in(0,1)$:
+(i) the Bayes log-odds is $\ell_\pi(x)=g^\top\Sigma^{-1}x-\frac12D^2+\log\frac{\pi}{1-\pi}$, linear in $x$ and a sum of per-sensor terms when sensors are independent;
+(ii) for every $\alpha$, the most powerful size-$\alpha$ test of normal vs.\ target is $\phi^*(x)=\1\{g^\top\Sigma^{-1}x>z_\alpha D\}$, which does not depend on $\pi$;
+(iii) if a learner's score $\hat f_n\to\ell_\pi$ in probability under the training mixture and $\hat\phi_n$ thresholds it at the $(1-\alpha)$-quantile of its scores on normal data (the population quantile, or the empirical one from $m_n\to\infty$ normal windows independent of training), then $Q(\hat\phi_n\ne\phi^*)\to0$ for every distribution $Q$ absolutely continuous w.r.t.\ Lebesgue measure.
+\end{theorem}
+Part (iii) applies to well-specified logistic regression and to any cross-entropy-consistent flexible learner. In this regime the broad rule is not a failure of optimization. It is the unique optimum of the training problem, so additional normal-vs-target data or rebalancing moves a learner \emph{toward} it.
+
+\begin{theorem}[Partial-overlap false-alarm law]\label{thm:law}
+Under \cref{ass:gauss}, $\Pr_h(\phi^*=1)=\Phi\big(D\,r(h)-z_\alpha\big)$ for every pattern $h$. With independent, equal-SNR sensors, an $m$-of-$k$ partial pattern is flagged with probability $\Phi(\tfrac{m}{k}D-z_\alpha)$. A pattern that shifts a single signature sensor by $c$ times its target shift is flagged with $\Phi(\tfrac{c}{k}D-z_\alpha)$, a sign-flipped target with $\Phi(-D-z_\alpha)$, and a shift on non-signature sensors at rate exactly $\alpha$.
+\end{theorem}
+
+\begin{corollary}[Power--specificity curve; detectability paradox]\label{cor:paradox}
+Let $\beta=\Phi(D-z_\alpha)$ be the detection rate. Then $\Pr_h(\phi^*=1)=\Phi\big(r(h)\,(\Phi^{-1}(\beta)+z_\alpha)-z_\alpha\big)$. For any look-alike with $r(h)\in(0,1)$ this is strictly increasing in $\beta$ and tends to $1$ as $\beta\to1$. Anything that makes the target easier to detect at a fixed false-alarm budget while leaving the look-alike's share $r(h)$ unchanged raises its false-alarm rate. Scaling all shifts (of target and look-alike) up, or the noise down, does this for \emph{every} partial look-alike.
+\end{corollary}
+The curve has no free parameter. Given a model's measured detection rate it predicts its look-alike rates, and agreement is evidence that the model behaves like a sum of evidence. The law also shows which look-alikes are worst. A condition that strongly moves the \emph{loudest} signature sensor (largest $D_j$) is flagged most, and a strongly amplified single sensor can exceed the target itself ($r>1$).
+
+\subsection{What deployment needs: a test against all look-alikes}
+\label{sec:composite}
+Let $a_j$ be the post-onset minus baseline mean of sensor $j\in S$, oriented by $s_j$. Under \cref{ass:gauss} with independent sensors and a known onset, $a\sim\cN(\mu,\mathrm{diag}(\sigma_j^2))$ with $\mu=(\delta_j)_{j\in S}$ under the target. A \emph{generalized additive} detector has the form $\1\{\sum_{j}\psi_j(a_j)>t\}$ with each $\psi_j$ nondecreasing. The intersection-union (IU) test is $\phi_{IU}(a)=\1\{\min_j a_j/\sigma_j>z_\alpha\}$ \citep{berger1982}.
+\begin{theorem}[Composite null]\label{thm:composite}
+Let $M_j\ge\delta_j$.
+(a) Every deployment-valid level-$\alpha$ detector, including any function of the full window, has power at most $\min_{j\in S}\Phi(D_j-z_\alpha)$, with $D_j=\delta_j/\sigma_j$ for the shift statistic and $D_j^2=g_j^\top\Sigma_{jj}^{-1}g_j$ for full windows when the null contains the near-miss patterns $g-g_j$.
+(b) $\phi_{IU}$ is deployment-valid for $M=\infty$. Its miss probability is at most $k$ times the smallest miss probability allowed by (a).
+(c) With equal shifts, $M_j=\delta$, a deployment-valid linear detector $\1\{w^\top a>t\}$ with $w\ge0$ has power at most $\Phi(\delta/(\sigma\sqrt k)-z_\alpha)$, attained at $w=\1$.
+(d) If $M=\infty$ and some $\psi_j$ is unbounded above, every deployment-valid generalized additive detector has power $0$. This covers every linear detector with $w\ge0$, $w\ne0$, and every channel-independent sequence model $f(X)=\sum_jf_j(X_{\cdot j})$ whose per-channel terms are unbounded along fault-direction shifts.
+(e) If every $\psi_j$ is bounded, the class contains $\phi_{IU}$ (take $\psi_j=\1\{a_j>z_\alpha\sigma_j\}$ and $t=k-\frac12$).
+(f) The training optimum $\phi^*$ is not deployment-valid: with equal SNR, its false-alarm rate on a channel near-miss is $\Phi(\frac{k-1}{\sqrt k}\frac{\delta}{\sigma}-z_\alpha)>\alpha$.
+\end{theorem}
+Part (d) says that capping each sensor's vote is not a cosmetic choice. Without it, no threshold makes a sum-type detector safe against look-alikes that are allowed to be loud.
+
+\subsection{Why norm-seeking training prefers the sum when classes are separated}
+\label{sec:separated}
+When normal and target are far apart, as in our real data where one sensor alone separates the training set, \cref{thm:np}(iii) no longer pins down the detector away from the training support. The choice is then made by what training prefers. Gradient descent on homogeneous nets favours small-norm solutions \citep{lyu2020,ji2020}, weight decay penalizes the norm explicitly, and small norm bounds the Lipschitz constant (\cref{lem:lip}).
+\begin{theorem}[Near-misses sit next to the target]\label{thm:sep}
+Let $x_0,x_+$ be normal and target prototypes, $\Delta=\|x_+-x_0\|$, and $f$ a score with $G=f(x_+)-f(x_0)>0$. Let $\kappa=\Lip(f)\,\Delta/G\ge1$ be its Lipschitz constant relative to the smallest one compatible with this separation.
+(a) Any $x$ with $\|x-x_+\|=\rho\Delta$ satisfies $p(x):=\frac{f(x)-f(x_0)}{G}\ge1-\kappa\rho$. A channel near-miss has $\rho=1/\sqrt{k}$ (equal shifts and durations). A temporal near-miss displacing one sensor's shift block by $\Delta t\le L$ steps has $\rho=\sqrt{2\Delta t/(kL)}$.
+(b) Let $f(x)=\sum_iv_i\relu(w_i^\top x+b_i)+c$ have path norm $R=\sum_i|v_i|\|w_i\|$. If $f(x_+)-f(x^{(j)})\ge\gamma$ for every channel near-miss $x^{(j)}$, then $R\ge\frac{\sqrt k\,\gamma}{\delta\sqrt L}=k\,\frac{\gamma}{G}\,R_{\min}$, where $R_{\min}=G/\Delta$.
+\end{theorem}
+A norm-limited model therefore scores near-misses most of the way to the target. Pushing them back to the normal level ($\gamma=G$) needs $k$ times the minimum path norm. For two symmetric prototypes, the small-initialization limit of two-layer leaky-ReLU training \citep{lyu2021} is exactly the linear classifier $w\propto\1_S$ (\cref{rem:lyu}), which places channel near-misses at $p=(k-1)/k$. \Cref{prop:pstar} (\cref{app:proofs}) converts the norm cost into a necessary fraction of near-miss examples that grows with the weight-decay strength.
+
+\subsection{The least supervision that identifies the conjunction}
+\label{sec:teach}
+A labelled set \emph{identifies} the target rule within a hypothesis class if the target rule is the only member consistent with it. We consider the two axes along which a pattern can fall short of the target. On the \emph{channel} axis, configurations are subsets $A\subseteq S$ of shifted sensors, all simultaneous. On the \emph{time} axis, all of $S$ is shifted on intervals $I_j$, summarized by the overlap graph $\mathcal{G}$ on $S$, with an edge $\{i,j\}$ iff $I_i\cap I_j\neq\emptyset$. $\mathcal{H}_{\mathrm{ch}}$ ($\mathcal{H}_{\mathrm{t}}$) is the set of rules monotone in $A$ (in the edge set of $\mathcal{G}$) that equal $1$ at the target. Normal training data label the channel-axis bottom $A=\emptyset$.
+\begin{theorem}[Minimal supervision]\label{thm:teach}
+(a) A labelled set identifies $\1\{A=S\}$ in $\mathcal{H}_{\mathrm{ch}}$ iff it contains all $k$ channel near-misses $S\setminus\{j\}$.
+(b) Intervals on a line share a common point iff every pair overlaps \citep{helly1923}. Hence ``simultaneous'' is $\1\{\mathcal{G}=K_k\}$, and a labelled set identifies it in $\mathcal{H}_{\mathrm{t}}$ iff it contains, for every pair $\{a,b\}$, a \emph{pair-staggered} pattern with $\mathcal{G}=K_k-\{a,b\}$. Each such pattern is realizable with all shifts of equal length.
+(c) A fully staggered pattern ($\mathcal{G}=\emptyset$, ``one after another'') is the bottom of the time axis. Labelling it excludes only the constant rule, so for $k\ge3$ it neither identifies simultaneity nor replaces any pair-staggered pattern.
+(d) Hence identification on both axes needs and is achieved by $k+\binom{k}{2}$ near-miss types, $6$ for $k=3$.
+\end{theorem}
+If a learner were monotone in the joint order of both axes, channel near-misses would lie below pair-staggered ones and $\binom k2$ types would suffice (\cref{rem:joint}). Learned networks need not respect that order, which is why we supply both. How many examples per type?
+
+\begin{proposition}[Examples per near-miss type]\label{prop:samples}
+For a learner that thresholds each signature sensor and requires all of them, let sensor $j$ have level $\nu_j$ in its near-miss and $\nu_j+\Delta_j$ in the target, with noise $\sigma_j$. If each threshold is the midpoint of the sample means of $n$ near-misses of type $j$ and $n$ targets, and $n\ge32\,\frac{\max_j\sigma_j^2}{\min_j\Delta_j^2}\log\frac{4k}{\eta}$, then with probability $\ge1-\eta$ every near-miss type is flagged with probability $\le\Phi(-\Delta_j/(4\sigma_j))$ and the target is missed with probability $\le\sum_j\Phi(-\Delta_j/(4\sigma_j))$. If the $n$ examples of a type are consecutive draws of an AR(1) sequence with coefficient $\phi\in[0,1)$, $n$ is replaced by $n(1-\phi)/(1+\phi)$ (\cref{lem:ar}).
+\end{proposition}
+The weakest sensor is the bottleneck: halving $\Delta_j$ quadruples the examples needed.
+
+%=====================================================================
+\section{Method: conjunction-identifying supervision}
+\label{sec:method}
+The theory leaves two remedies. One is to change the inductive bias: an IU or capped-evidence detector (\cref{thm:composite}(e)). The other is to keep a flexible model and supply the near-miss types of \cref{thm:teach}. Both need the signature and examples of the target's effect. In many settings these come from paired runs, a faulty run and a fault-free run under identical conditions, or from simulators, so that the target's effect $D=X^{\mathrm{fault}}-X^{\mathrm{normal}}$ is known per window. We then build training windows by \emph{counterfactual splicing}, $X=W+M\odot D$, with a mask $M\in\{0,1\}^{T\times C}$ (\cref{alg:cis}). Calibration follows standard practice (1\% of held-out normal windows). \Cref{thm:composite} implies that guaranteed validity against look-alikes would additionally require calibrating on near-misses, which we leave optional.
+
+\begin{algorithm}[t]
+\caption{Conjunction-identifying supervision (CIS)}\label{alg:cis}
+\KwIn{fault-free windows $W$, paired target effects $D$, onset $o$, signature size $k$, examples per type $n$}
+Estimate $S$: the $k$ sensors with the largest standardized mean shift of $D$ after onset (skip near-duplicates)\;
+Positives: $W+\1_{t\ge o}\1_{S}\odot D$; negatives: normal windows (half time-matched to positives)\;
+\For{$j\in S$}{add $n$ channel near-misses $W+\1_{t\ge o}\1_{S\setminus\{j\}}\odot D$ with label 0}
+\For{each pair $\{a,b\}\subset S$}{add $n$ pair-staggered near-misses with label 0: $a$ shifted on $[o,o+\ell)$, $b$ on $[o+\ell,o+2\ell)$, every other $j\in S$ on $[o+\ell/2,o+3\ell/2)$, $\ell=\lfloor (T-o)/2\rfloor$}
+Train any detector; choose $n$ from \cref{prop:samples}, which depends on the weakest sensor\;
+\end{algorithm}
+
+%=====================================================================
+\section{Experiments}
+\label{sec:exp}
+Each experiment tests a prediction of \cref{sec:theory}. We separate guarantees (theorems) from evidence (measurements) and report means $\pm$ s.d.\ over seeds where available. Real-data runs use one seed, and we mark them as such.
+
+\paragraph{Data.} \emph{Synthetic}: Gaussian windows following \cref{eq:model}, with signatures and noise set per experiment (\cref{app:exp}). \emph{Toy replica}: 20 AR(1) channels ($\phi=0.7$), 48 steps, a shared slow load factor on six channels, and a target that lowers three channels by $2.5\sigma$ from a random onset. \emph{Real}: two public building-system fault benchmarks \citep{granderson2023}: a fan-coil unit (FCU; 1 fault-free and 48 faulty one-year runs, 24 sensors after filtering) and a single-duct air-handling unit (AHU; 1 fault-free and 20 faulty runs, 26 sensors). Every faulty run is paired with the fault-free run under the same weather and schedule, so the fault effect $D$ is known exactly. Windows are 48 steps of 15 minutes. Train, validation and test windows come from different weeks, and half of the normal training windows are time-matched to fault windows. Test constructs (P$m$: $m$-of-$k$; BIG1: one sensor $\times3$; ASYNC: fully staggered; PAIRSTAG: pair-staggered; UP: sign-flipped; OFF: moved to unrelated sensors) are counterfactual splices. In addition, every other fault file, never used in training, is a test case, bucketed by how many signature sensors it actually moves. All thresholds give 1\% false alarms on held-out normal windows.
+
+\paragraph{Detectors and baselines.} We use logistic regression, random forests \citep{breiman2001} and gradient boosting \citep{friedman2001} on six window statistics per sensor, an MLP on the raw series, an LSTM \citep{hochreiter1997}, a channel-independent (CI) model (a shared per-sensor encoder with a linear head, additive by construction, as in \citealp{nie2023}) and a capped CI model ($\beta\sum_c\tanh(\cdot)$). As reference we use the rule ``all signature sensors shifted in the fault direction within the same 2-hour stretch'', applied to residuals after regressing out non-signature sensors. As training-time remedies we compare: more data and rebalancing; \emph{fully staggered} negatives (a time augmentation); \emph{generic negatives} (the fault's effect moved to unrelated sensors, an outlier-exposure-style control, \citealp{hendrycks2019}); \emph{channel near-misses}; and \emph{CIS} (channel near-misses plus pair-staggered near-misses). Remedies add the same number of label-0 windows ($n_{\mathrm{train}}/2$).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figs/fig_main.pdf}
+\vspace{-14pt}
+\caption{\textbf{(a)} The power--specificity curve of \cref{cor:paradox} ($k=3$, no fitted parameter) with measured 2-of-3 (circles) and 1-of-3 (squares) rates for gradient-descent logistic regression and a two-layer ReLU net over a signal sweep (5 seeds; s.d.\ smaller than markers). Stars: AHU coil-valve data, capped CI model, with the fault effect scaled by $0.05$--$1$ (one seed); miss rates below $10^{-4}$ are drawn at $10^{-4}$. \textbf{(b)} Temporal identification (\cref{thm:teach}(b,c)): flag rate on pair-staggered look-alikes after training with no timing negatives, fully staggered negatives, or pair-staggered negatives. Synthetic: raw-series two-layer net, 5 seeds (error bars: s.d.); real: LSTM on three FCU runs (one seed each). \textbf{(c)} 2-of-3 look-alike flag rate vs.\ channel near-miss examples per type (LSTM, weight decay $10^{-3}$, real data; detection stays $\ge0.99$).}
+\label{fig:main}
+\end{figure}
+
+\paragraph{The law and the paradox (\cref{thm:law,cor:paradox}).} For synthetic signals, the curve evaluated at each model's \emph{own} detection rate predicts its look-alike rates. For logistic regression the largest deviation over $\delta/\sigma\in[0.5,3]$ is $0.007$ for 2-of-3 and $0.006$ for 1-of-3. The two-layer net follows the same curve with largest deviation $0.023$ (\cref{fig:main}a, \cref{tab:law}), so its learned score behaves like a sum. Detection and look-alike alarms rise together, which is the paradox. In the toy replica (\cref{tab:toyall}), the raw-series MLP, LSTM and channel-independent models lie within $0.05$ of the curve at their own detection rates ($0.94$--$0.97$). Logistic regression on window statistics lies $0.06$--$0.07$ above it and flags half of the fully staggered windows, consistent with the timing-blindness of window statistics (\cref{lem:blind}). The capped CI model and the reference rule lie below the curve on 2-of-3 ($0.42$ vs.\ $0.54$ and $0.21$ vs.\ $0.52$), as detectors that do not sum should. On real AHU data, scaling the fault effect raises the capped CI model's detection from $0.06$ to $1.00$ and its 2-of-3 alarms from $0.03$ to $0.90$ (stars). The stars follow the curve up to detection $0.66$ and fall below it at higher detection ($0.47$ vs.\ $0.63$ at detection $0.95$), consistent with capping. On the FCU, detection is already $1.00$ at a fault effect of $\times0.25$, so the paradox cannot be resolved there.
+
+\paragraph{Composite null and capped evidence (\cref{thm:composite}).} In simulation ($k=3$), additive detectors calibrated on normal data have false-alarm rates of $0.49$--$1.00$ on near-misses. The IU detector is valid (size $0.010$), and its power $0.05/0.42/0.87/0.99$ at $\delta/\sigma=2/3/4/5$ matches $\Phi(\delta/\sigma-z_\alpha)^3$ (\cref{tab:composite}). Empirically, the capped CI model is far less sensitive to one loud sensor than the uncapped CI model (BIG1, no remedy: $0.09$ vs.\ $0.99$ in the toy). On real data, however, it did not learn the conjunction even with 1000 near-misses per type (FCU 2-of-3 rate $0.99$). Representability (\cref{thm:composite}(e)) is not learnability.
+
+\paragraph{Separated regime (\cref{thm:sep}).} Two-layer ReLU nets trained on well-separated normal and target clusters ($k=2,\dots,8$; \cref{tab:sep}) place channel near-misses at $p=0.57$--$0.91$ of the way to the target. This is slightly above the linear limit $(k-1)/k$ and above the bound of \cref{thm:sep}(a) evaluated with the measured $R/R_{\min}\in[1.19,1.34]$. The near-misses are flagged in 98--100\% of draws. After retraining with 100 near-misses per type, path norms are $4.0$--$8.6$ times the minimum, above the requirement $k\gamma/G$ of \cref{thm:sep}(b) in every run. Even so, the fraction of near-misses still flagged grows from $0.20$ at $k=2$ to $1.00$ at $k=8$. At a fixed training budget, rejecting more near-miss types is harder, which is consistent with the growing norm cost, although this experiment does not isolate the cause.
+
+\begin{table}[t]
+\centering
+\caption{Toy replica: flag rates at 1\% false alarms (mean $\pm$ s.d., 3 seeds) for each training remedy, LSTM. All remedies add the same number of label-0 windows. The fault effect moved to unrelated sensors (OFF) is flagged at $\le0.02$ under every remedy.}
+\label{tab:toy}
+\small
+\input{tables/tab_toy.tex}
+\end{table}
+
+\paragraph{Which negatives teach what (\cref{thm:teach}).} In the synthetic temporal experiment (\cref{fig:main}b), fully staggered negatives remove fully staggered false alarms but leave pair-staggered look-alikes high. Pair-staggered negatives remove both, as \cref{thm:teach}(b,c) predicts. The same ordering holds on all three real FCU runs: pair-staggered look-alikes are flagged at $0.37$--$0.59$ after fully staggered negatives vs.\ $0.00$--$0.06$ after CIS, with detection at $1.00$. Fully staggered negatives do lower pair-staggered alarms partly (from $0.92$--$0.99$ on the FCU). \Cref{thm:teach}(c) does not exclude this: it says these labels do not identify simultaneity, not that a learner cannot generalize from them. In the toy replica (\cref{tab:toy}), fully staggered negatives remove fully staggered alarms ($0.14\to0.02$). Because each of their segments shifts a single sensor, they also remove most single-sensor alarms (BIG1 $0.65\to0.08$), but they leave 2-of-3 at $0.40$. Channel near-misses bring 2-of-3 to $0.15$ at a detection cost ($0.94\to0.83$). CIS reaches 2-of-3 $0.23$ and pair-staggered $0.04$ at detection $0.90$. This is close to the reference rule on 2-of-3 ($0.21$) and better on pair-staggered windows ($0.33$). Generic negatives on unrelated sensors leave every rate unchanged (2-of-3 $0.56$). They carry no information about the conjunction, unlike outlier exposure in standard OOD detection. \Cref{tab:toyremedy} shows the same ordering for all seven toy models.
+
+\paragraph{How many examples (\cref{prop:samples}).} Near-miss sweeps on real data (\cref{fig:main}c) show that about 300 examples per type bring FCU 2-of-3 alarms from $0.96$--$1.00$ to $0.06$--$0.14$. On the AHU coil-valve target, whose third signature sensor moves only $0.37$ s.d., 1000 per type still leave $0.50$. \Cref{prop:samples} predicts this weak-sensor bottleneck: relative to a sensor moving one s.d., it implies roughly $(1/0.37)^2\approx7$ times more examples. In the synthetic sweep (\cref{tab:recipe}), stronger weight decay slows the decrease ($0.46$ vs.\ $0.34$ at 256 per type), in the direction of \cref{prop:pstar}. On real data the ordering reverses: the LSTM with weight decay $10^{-3}$ needs fewer near-misses than without (FCU fan, clean: $0.06$ vs.\ $0.44$ at 300 per type). \Cref{prop:pstar} concerns the regularized optimum of a two-layer net and does not describe this case.
+
+\begin{table}[t]
+\centering
+\caption{Real faults (LBNL simulations, LSTM, one seed). \emph{2-of-3}: look-alike flag rate after normal-vs-target training (reference all-sensors rule in brackets) and after adding channel near-misses (+\,NM). \emph{Pair-stag.}: after fully staggered negatives vs.\ after CIS. \emph{Never-seen}: other fault files sharing one or two signature sensors vs.\ none. \emph{Fleet share}: fraction of false alarms caused by other faults in an 89/1/10\% normal/target/other mix.}
+\label{tab:real}
+\small
+\setlength{\tabcolsep}{3.2pt}
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+ & & \multicolumn{2}{c}{2-of-3 flagged} & Pair-stag.\ flagged & Never-seen faults & Fleet\\
+\cmidrule(lr){3-4}\cmidrule(lr){5-5}\cmidrule(lr){6-6}
+Target (signature shifts, s.d.) & Det. & plain (ref.) & + NM & stag.\,/\,CIS & partial\,/\,none & share\\
+\midrule
+FCU fan outlet, clean (2.6, 2.3, 1.7) & 1.00 & 0.97 (0.35) & 0.01 & 0.51 / 0.00 & 0.70 / 0.22 & 76\% \\
+FCU fan outlet, real-mode & 1.00 & 1.00 (0.30) & 0.01 & 0.37 / 0.00 & 0.67 / 0.25 & 72\% \\
+FCU cooling valve (9.0, 8.1, 2.3) & 1.00 & 1.00 (0.43) & 0.23 & 0.59 / 0.06 & 0.60 / 0.18 & 85\% \\
+AHU coil valve (1.8, 0.8, 0.37) & 1.00 & 0.78 (0.74) & 0.30 & 0.18 / 0.15$^\dagger$ & 0.03 / 0.00 & 33\% \\
+AHU damper (2.1, 0.9, 0.6) & 1.00 & 0.79 & 0.19 & -- & 0.06 / 0.01 & -- \\
+\bottomrule
+\end{tabular}\\[2pt]
+{\footnotesize $^\dagger$Even the reference rule flags 0.90 of AHU coil PAIRSTAG windows, so the timing test is uninformative there. ``--'': not run with the new constructs.}
+\end{table}
+
+\paragraph{Real never-seen faults.} On the FCU, faults that share signature sensors are flagged far more often than faults that share none (\cref{tab:real}). Most fleet false alarms (72--85\%) then come from other faults, not from normal operation. On the AHU, other faults rarely move the sensors that the LSTM relies on, and false alarms on never-seen faults stay $\le6\%$. The law predicts exactly this: what matters is the overlap $r$ that real look-alikes have with the evidence the model sums. Adding 2-of-3 near-misses to FCU fan-outlet training also cuts flag rates on never-seen faults sharing one or two sensors, from $0.63/0.79$ to $0.11/0.22$, although none of these faults was used in training. Across $n\in\{500,2000,8000\}$ and prevalences $\{0.1,0.5,0.9\}$ the LSTM's 2-of-3 rate never fell below $0.65$ on any target, as \cref{thm:np}(ii--iii) predicts for more data and rebalancing.
+
+\paragraph{Limitations.} The real data are simulations with less sensor noise than field data. The signature and the reference rule are estimates, and real-data runs use one seed. \Cref{thm:np,thm:law,thm:composite} assume Gaussian noise and a known onset. \Cref{thm:sep} is a bound in terms of a measured constant, not a convergence theorem for gradient descent. \Cref{thm:teach} assumes per-axis monotone learners. Where real detection saturates, the law cannot be tested quantitatively. The weight-decay prediction of \cref{prop:pstar} did not transfer to the real-data LSTM.
+
+%=====================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+Detectors trained on normal-vs-target data learn to add up the right evidence instead of requiring all of it. For the training question this is optimal. For deployment it is wrong, and more data cannot change it. The theory gives three practical consequences. A model's look-alike false alarms can be predicted from its detection rate. Uncapped additive and channel-independent designs cannot be made safe against loud look-alikes. And the fix is small and specific: $k$ channel near-misses and $\binom k2$ pair-staggered near-misses, with the weakest sensor setting the amount. Open problems include a gradient-descent convergence theorem for non-symmetric data, the unknown-onset version of the law, and training procedures that make capped models learn the conjunction they can represent.
+
+\bibliography{refs}
+\bibliographystyle{iclr2027_conference}
+
+\newpage
+\appendix
+\input{appendix.tex}
+\end{document}

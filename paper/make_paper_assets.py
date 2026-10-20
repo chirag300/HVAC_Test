@@ -22,8 +22,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, "..")
 Z = norm.ppf(0.99)
 DARK, MAG, LIGHT, GOLD, GREY = "#3F0A6A", "#AE3ED3", "#BCA5CC", "#C98A12", "#8C8C8C"
-plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 8, "axes.spines.top": False,
-                     "axes.spines.right": False, "axes.titlesize": 8.5, "axes.titleweight": "bold"})
+plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 8.5, "axes.spines.top": False,
+                     "axes.spines.right": False, "axes.titlesize": 9, "axes.titleweight": "bold",
+                     "xtick.labelsize": 7.5, "ytick.labelsize": 7.5, "legend.fontsize": 6.8})
 
 
 def law(beta, r):
@@ -32,7 +33,7 @@ def law(beta, r):
 
 # ----------------------------------------------------------------- real data (single seed, from REPORT.md)
 REAL_HELLY = {  # PAIRSTAG flag rate (LSTM): no timing negatives / fully staggered / CIS
-    "FCU fan\n(clean)": (0.92, 0.51, 0.00), "FCU fan\n(real)": (0.99, 0.37, 0.00), "FCU valve": (0.96, 0.59, 0.06)}
+    "fan\nclean": (0.92, 0.51, 0.00), "fan\nreal": (0.99, 0.37, 0.00), "valve": (0.96, 0.59, 0.06)}
 REAL_RECIPE = {  # LSTM wd=1e-3, 2-of-3 flag rate vs near-misses per type
     "counts": [0, 3, 10, 30, 100, 300, 1000],
     "FCU fan (clean)": [0.96, 0.89, 0.75, 0.57, 0.26, 0.06, 0.01],
@@ -60,7 +61,7 @@ def load_toy():
 
 
 def fig_main(S, out):
-    fig, axs = plt.subplots(1, 3, figsize=(7.2, 2.25), gridspec_kw={"width_ratios": [1.15, 1.05, 1.0]})
+    fig, axs = plt.subplots(1, 3, figsize=(6.9, 2.6), gridspec_kw={"width_ratios": [1.1, 1.0, 1.0]})
     # (a) power-specificity curve
     ax = axs[0]
     lo = 1e-4
@@ -78,16 +79,16 @@ def fig_main(S, out):
     ax.set_xscale("log")
     ax.set_xlim(1.0, lo * 0.8)
     ax.set_xticks([1, 0.1, 0.01, 1e-3, 1e-4], ["100%", "10%", "1%", "0.1%", "0.01%"])
-    ax.set_xlabel("miss rate of the target (1% false alarms)")
+    ax.set_xlabel("target miss rate (1% false alarms)")
     ax.set_ylabel("look-alike flagged")
     ax.set_ylim(0, 1)
     ax.grid(alpha=0.25)
-    ax.legend(fontsize=5.6, frameon=False, loc="upper left")
-    ax.set_title("(a) false-alarm law and paradox")
+    ax.legend(frameon=False, loc="upper left", handlelength=1.4, borderaxespad=0.1)
+    ax.set_title("(a) law and paradox")
     # (b) Helly
     ax = axs[1]
     syn = S["S3"]
-    groups = ["Synthetic"] + list(REAL_HELLY)
+    groups = ["Synth."] + list(REAL_HELLY)
     vals = [[syn["normal vs fault"]["pair"][0], syn["+ fully staggered"]["pair"][0], syn["+ pair-staggered"]["pair"][0]]]
     errs = [[syn["normal vs fault"]["pair"][1], syn["+ fully staggered"]["pair"][1], syn["+ pair-staggered"]["pair"][1]]]
     vals += [list(v) for v in REAL_HELLY.values()]
@@ -96,13 +97,16 @@ def fig_main(S, out):
     w = 0.26
     for i, (lab, col) in enumerate(zip(("no timing negatives", "fully staggered", "pair-staggered (CIS)"),
                                        (GREY, LIGHT, DARK))):
-        ax.bar(x + (i - 1) * w, [v[i] for v in vals], w, yerr=[e[i] for e in errs], color=col, label=lab,
-               error_kw=dict(lw=0.6, capsize=1.5))
-    ax.set_xticks(x, groups, fontsize=6.5)
-    ax.set_ylim(0, 1.18)
-    ax.set_ylabel("pair-staggered look-alike flagged")
-    ax.legend(fontsize=5.6, frameon=False, ncol=1, loc="upper right")
-    ax.set_title("(b) which timing negatives teach")
+        ax.bar(x + (i - 1) * w, [v[i] for v in vals], w, color=col, label=lab)
+        ax.errorbar([(i - 1) * w], [vals[0][i]], yerr=[errs[0][i]], fmt="none", ecolor="k", lw=0.7, capsize=1.5)
+    ax.set_xticks(x, groups, fontsize=7.5)
+    ax.axvline(0.5, color=GREY, lw=0.6, ls=":")
+    ax.set_xlabel("synthetic | real FCU runs")
+    ax.set_ylim(0, 1.45)
+    ax.set_yticks([0, 0.25, 0.5, 0.75, 1.0])
+    ax.set_ylabel("pair-staggered flagged")
+    ax.legend(frameon=False, ncol=1, loc="upper left", handlelength=1.2, borderaxespad=0.1)
+    ax.set_title("(b) timing negatives")
     # (c) recipe (real)
     ax = axs[2]
     cs = [max(c, 1) for c in REAL_RECIPE["counts"]]
@@ -115,9 +119,9 @@ def fig_main(S, out):
     ax.set_ylabel("2-of-3 look-alike flagged")
     ax.set_ylim(-0.02, 1.05)
     ax.grid(alpha=0.25)
-    ax.legend(fontsize=5.6, frameon=False, loc="lower left")
-    ax.set_title("(c) how many examples (real)")
-    fig.tight_layout(w_pad=0.6)
+    ax.legend(frameon=False, loc="lower left", handlelength=1.6, borderaxespad=0.1)
+    ax.set_title("(c) examples needed (real)")
+    fig.tight_layout(w_pad=0.8)
     os.makedirs(os.path.join(out, "figs"), exist_ok=True)
     fig.savefig(os.path.join(out, "figs", "fig_main.pdf"), bbox_inches="tight")
     fig.savefig(os.path.join(out, "figs", "fig_main.png"), dpi=200, bbox_inches="tight")
@@ -132,13 +136,13 @@ def pm(vals, d=2):
 
 
 def tab_toy(T, nseeds, out):
-    cols = ["CAP", "P1", "P2", "BIG1", "ASYNC", "PAIRSTAG", "OFF"]
-    heads = ["Detection", "1-of-3", "2-of-3", "BIG1", "Fully stag.", "Pair-stag.", "Moved (OFF)"]
+    cols = ["CAP", "P1", "P2", "BIG1", "ASYNC", "PAIRSTAG"]
+    heads = ["Detection", "1-of-3", "2-of-3", "BIG1", "Fully stag.", "Pair-stag."]
     rows = [("Normal vs.\\ target only", "main"), ("+ fully staggered negatives", "fixtime"),
             ("+ generic negatives (OE-style)", "fixoe"), ("+ channel near-misses", "fix"),
             ("+ CIS (channel + pair-staggered)", "fixhelly")]
     m = "LSTM (raw series)"
-    lines = ["\\setlength{\\tabcolsep}{3.5pt}", "\\begin{tabular}{l" + "c" * len(cols) + "}", "\\toprule",
+    lines = ["\\setlength{\\tabcolsep}{3pt}", "\\begin{tabular}{l" + "c" * len(cols) + "}", "\\toprule",
              "Training & " + " & ".join(heads) + "\\\\", "\\midrule"]
     for lab, step in rows:
         rs = T.get(step, [])
@@ -183,16 +187,20 @@ def tab_appendix(S, C, T, nseeds, out):
     L += ["\\bottomrule\\end{tabular}\\end{table}", ""]
     # separated
     L += ["\\begin{table}[h]\\centering\\small",
-          "\\caption{Separated regime (S2; mean$\\pm$s.d., 3 seeds). \\emph{Position}: $p(x^{(j)})$ of channel "
-          "near-misses. \\emph{Bound}: $1-\\kappa/\\sqrt k$ with $\\kappa\\le R/R_{\\min}$ measured. \\emph{Norm ratio}: "
-          "normalized path norm with vs.\\ without 100 near-misses per type; \\cref{thm:sep}(b) predicts $\\ge k\\gamma/G$.}"
+          "\\caption{Separated regime (S2; mean$\\pm$s.d., 3 seeds). Left block: normal-vs-target training. "
+          "\\emph{Position}: $p(x^{(j)})$ of channel near-misses at the prototypes. \\emph{Bound}: $1-(R/R_{\\min})/\\sqrt k$, "
+          "a valid lower bound on the position because $\\kappa\\le R/R_{\\min}$ (\\cref{lem:lip}). \\emph{Flagged}: near-miss "
+          "flag rate at 1\\% false alarms. Right block: retrained with 100 near-misses per type. \\emph{Norm ratio}: "
+          "$R/G$ after over $R/G$ before. \\cref{thm:sep}(b) requires $R/R_{\\min}\\ge k\\gamma/G$ with $\\gamma$ the "
+          "smallest target-minus-near-miss score gap; it held in every run. Detection after retraining is 1.000 throughout.}"
           "\\label{tab:sep}",
-          "\\setlength{\\tabcolsep}{3.5pt}\\begin{tabular}{cccccccc}\\toprule",
-          "$k$ & linear $(k{-}1)/k$ & position & bound & flagged & norm ratio & flagged after & detection after\\\\\\midrule"]
+          "\\setlength{\\tabcolsep}{3pt}\\begin{tabular}{cccccc|cccc}\\toprule",
+          "$k$ & linear $\\frac{k-1}{k}$ & position & bound & $R/R_{\\min}$ & flagged & norm ratio & $R/R_{\\min}$ & "
+          "$k\\gamma/G$ & flagged\\\\\\midrule"]
     for r in S["S2"]:
         L.append(f"{r['k']} & {r['linear']:.3f} & {r['pos'][0]:.3f}$\\pm${r['pos'][1]:.3f} & {r['bound'][0]:.3f} & "
-                 f"{r['flag'][0]:.3f} & {r['ratio'][0]:.2f}$\\pm${r['ratio'][1]:.2f} & {r['flag_after'][0]:.3f} & "
-                 f"{r['cap_after'][0]:.3f}\\\\")
+                 f"{r['kappa'][0]:.2f} & {r['flag'][0]:.3f} & {r['ratio'][0]:.2f}$\\pm${r['ratio'][1]:.2f} & "
+                 f"{r['rnorm_after'][0]:.2f} & {r['kgamma_after'][0]:.2f} & {r['flag_after'][0]:.3f}\\\\")
     L += ["\\bottomrule\\end{tabular}\\end{table}", ""]
     # recipe
     L += ["\\begin{table}[h]\\centering\\small",
@@ -217,7 +225,7 @@ def tab_appendix(S, C, T, nseeds, out):
           f"\\caption{{Toy replica, all models, normal-vs-target training (mean$\\pm$s.d., {nseeds} seeds). "
           "Columns \\emph{law} give \\cref{cor:paradox} at each model's mean detection rate with equal shares "
           "($r=m/k$).}\\label{tab:toyall}",
-          "\\setlength{\\tabcolsep}{2.5pt}\\begin{tabular}{l" + "c" * (len(cols) + 2) + "}\\toprule",
+          "\\setlength{\\tabcolsep}{2.5pt}\\resizebox{\\linewidth}{!}{\\begin{tabular}{l" + "c" * (len(cols) + 2) + "}\\toprule",
           "Model & Detection & 1-of-3 & law & 2-of-3 & law & BIG1 & Fully st. & Pair-st. & UP & OFF\\\\\\midrule"]
     for m in T["main"][0]:
         rs = T["main"]
@@ -227,7 +235,7 @@ def tab_appendix(S, C, T, nseeds, out):
                 [pm([r[m][c] for r in rs]) for c in ("BIG1", "ASYNC", "PAIRSTAG", "UP", "OFF")]
         L.append(m.replace(" (raw series)", "").replace(" (stats)", " (stats)").replace("AND rule (true)", "Reference rule")
                  + " & " + " & ".join(cells) + "\\\\")
-    L += ["\\bottomrule\\end{tabular}\\end{table}", ""]
+    L += ["\\bottomrule\\end{tabular}}\\end{table}", ""]
     # toy remedies, other models
     L += ["\\begin{table}[h]\\centering\\small",
           f"\\caption{{Toy replica: 2-of-3 / pair-staggered flag rates per model and remedy (mean over {nseeds} seeds).}}"
@@ -251,6 +259,7 @@ REAL_TABLES = r"""
 \begin{table}[h]\centering\small
 \caption{Real data (LBNL), normal-vs-target training, all models, one seed. Clean mode. \emph{Pairwise law}: 2-of-3 rate predicted from the detection rate and the single-sensor rates (each sensor's share $r_j$ read from its single-sensor flag rate), a test of additivity. FCU values saturate near 1; the AHU coil is informative.}\label{tab:realall}
 \setlength{\tabcolsep}{2.4pt}
+\resizebox{\linewidth}{!}{%
 \begin{tabular}{llccccccccc}
 \toprule
 Target & Model & Det. & 1-of-3 & 2-of-3 & pairwise law & BIG1 & Fully st. & Pair-st. & UP & OFF\\
@@ -273,7 +282,7 @@ AHU coil & LogReg (stats) & 1.00 & 0.76 & 1.00 & 1.00 & 1.00 & 0.97 & 1.00 & 0.0
  & Capped CI & 1.00 & 0.47 & 0.96 & 0.98 & 0.41 & 0.31 & 0.50 & 0.01 & 0.06\\
  & Reference rule & 0.97 & 0.37 & 0.74 & 0.78 & 0.38 & 0.74 & 0.90 & 0.01 & 0.01\\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}
 
 \begin{table}[h]\centering\small

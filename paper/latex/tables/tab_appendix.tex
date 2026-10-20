@@ -1,0 +1,131 @@
+\begin{table}[h]\centering\small
+\caption{Synthetic law check (S1; mean$\pm$s.d., 5 seeds). \emph{Law}: \cref{cor:paradox} evaluated at the model's own measured detection rate (no fitting).}\label{tab:law}
+\setlength{\tabcolsep}{3pt}\begin{tabular}{llccccc}\toprule
+Model & $\delta/\sigma$ & Detection & 2-of-3 & law & 1-of-3 & law\\\midrule
+GD logistic & 0.5 & 0.070$\pm$0.005 & 0.040$\pm$0.003 & 0.039 & 0.021$\pm$0.002 & 0.021\\
+ & 1.0 & 0.274$\pm$0.012 & 0.122$\pm$0.007 & 0.120 & 0.041$\pm$0.003 & 0.040\\
+ & 1.5 & 0.606$\pm$0.015 & 0.278$\pm$0.012 & 0.276 & 0.074$\pm$0.004 & 0.072\\
+ & 2.0 & 0.869$\pm$0.011 & 0.491$\pm$0.017 & 0.489 & 0.123$\pm$0.007 & 0.120\\
+ & 2.5 & 0.974$\pm$0.002 & 0.706$\pm$0.013 & 0.699 & 0.190$\pm$0.009 & 0.184\\
+ & 3.0 & 0.998$\pm$0.000 & 0.863$\pm$0.006 & 0.867 & 0.273$\pm$0.010 & 0.272\\
+GD 2-layer ReLU & 0.5 & 0.026$\pm$0.004 & 0.019$\pm$0.002 & 0.019 & 0.014$\pm$0.001 & 0.014\\
+ & 1.0 & 0.113$\pm$0.007 & 0.059$\pm$0.005 & 0.057 & 0.027$\pm$0.002 & 0.025\\
+ & 1.5 & 0.379$\pm$0.026 & 0.164$\pm$0.009 & 0.163 & 0.050$\pm$0.002 & 0.049\\
+ & 2.0 & 0.760$\pm$0.012 & 0.370$\pm$0.009 & 0.381 & 0.093$\pm$0.004 & 0.094\\
+ & 2.5 & 0.941$\pm$0.004 & 0.582$\pm$0.022 & 0.605 & 0.141$\pm$0.009 & 0.151\\
+ & 3.0 & 0.991$\pm$0.003 & 0.785$\pm$0.015 & 0.793 & 0.222$\pm$0.009 & 0.226\\
+\bottomrule\end{tabular}\end{table}
+
+\begin{table}[h]\centering\small
+\caption{Composite null (C3, $k=3$, $4\times10^5$ draws). \emph{Size}: worst false-alarm rate over look-alikes, with shifts bounded by $\delta$ or unbounded ($50\delta$). Additive detectors are calibrated either on normal data or for the bounded null (\cref{thm:composite}(c)).}\label{tab:composite}
+\setlength{\tabcolsep}{3pt}\begin{tabular}{ccccccccc}\toprule
+ & \multicolumn{3}{c}{Additive, normal-calibrated} & \multicolumn{2}{c}{Additive, bounded-null} & \multicolumn{2}{c}{Intersection-union} & Bound\\
+$\delta/\sigma$ & size ($\le\delta$) & size ($\infty$) & power & size ($\infty$) & power & size ($\infty$) & power (pred.) & (a)\\\midrule
+2 & 0.493 & 1.000 & 0.872 & 1.000 & 0.121 & 0.010 & 0.051 (0.052) & 0.372\\
+3 & 0.872 & 1.000 & 0.998 & 1.000 & 0.276 & 0.010 & 0.423 (0.421) & 0.750\\
+4 & 0.989 & 1.000 & 1.000 & 1.000 & 0.493 & 0.010 & 0.866 (0.865) & 0.953\\
+5 & 1.000 & 1.000 & 1.000 & 1.000 & 0.712 & 0.010 & 0.989 (0.989) & 0.996\\
+\bottomrule\end{tabular}\end{table}
+
+\begin{table}[h]\centering\small
+\caption{Separated regime (S2; mean$\pm$s.d., 3 seeds). Left block: normal-vs-target training. \emph{Position}: $p(x^{(j)})$ of channel near-misses at the prototypes. \emph{Bound}: $1-(R/R_{\min})/\sqrt k$, a valid lower bound on the position because $\kappa\le R/R_{\min}$ (\cref{lem:lip}). \emph{Flagged}: near-miss flag rate at 1\% false alarms. Right block: retrained with 100 near-misses per type. \emph{Norm ratio}: $R/G$ after over $R/G$ before. \cref{thm:sep}(b) requires $R/R_{\min}\ge k\gamma/G$ with $\gamma$ the smallest target-minus-near-miss score gap; it held in every run. Detection after retraining is 1.000 throughout.}\label{tab:sep}
+\setlength{\tabcolsep}{3pt}\begin{tabular}{cccccc|cccc}\toprule
+$k$ & linear $\frac{k-1}{k}$ & position & bound & $R/R_{\min}$ & flagged & norm ratio & $R/R_{\min}$ & $k\gamma/G$ & flagged\\\midrule
+2 & 0.500 & 0.565$\pm$0.049 & 0.049 & 1.34 & 0.980 & 3.00$\pm$0.34 & 4.03 & 1.89 & 0.203\\
+3 & 0.667 & 0.727$\pm$0.009 & 0.267 & 1.27 & 1.000 & 3.82$\pm$0.53 & 4.85 & 2.24 & 0.600\\
+4 & 0.750 & 0.808$\pm$0.023 & 0.404 & 1.19 & 1.000 & 5.96$\pm$0.84 & 7.11 & 2.77 & 0.797\\
+6 & 0.833 & 0.886$\pm$0.010 & 0.505 & 1.21 & 1.000 & 7.05$\pm$1.14 & 8.56 & 3.53 & 0.978\\
+8 & 0.875 & 0.911$\pm$0.004 & 0.574 & 1.20 & 1.000 & 5.81$\pm$0.78 & 7.00 & 1.25 & 1.000\\
+\bottomrule\end{tabular}\end{table}
+
+\begin{table}[h]\centering\small
+\caption{Recipe curves: 2-of-3 look-alike flag rate vs.\ channel near-misses per type. Top: synthetic two-layer ReLU (S4; mean$\pm$s.d., 3 seeds). Bottom: real data, LSTM, one seed (detection $\ge0.99$ throughout).}\label{tab:recipe}
+\setlength{\tabcolsep}{3pt}\begin{tabular}{lccccccc}\toprule
+Synthetic, per type & 0 & 4 & 16 & 64 & 256 & & \\\midrule
+weight decay 0 & 0.87$\pm$0.03 & 0.53$\pm$0.03 & 0.48$\pm$0.17 & 0.44$\pm$0.08 & 0.34$\pm$0.03 & & \\
+weight decay 0.001 & 0.93$\pm$0.00 & 0.90$\pm$0.01 & 0.77$\pm$0.05 & 0.60$\pm$0.05 & 0.46$\pm$0.03 & & \\
+\midrule Real, per type & 0 & 3 & 10 & 30 & 100 & 300 & 1000\\\midrule
+FCU fan (clean), wd $10^{-3}$ & 0.96 & 0.89 & 0.75 & 0.57 & 0.26 & 0.06 & 0.01\\
+FCU fan (clean), wd 0 & 0.95 & 0.92 & 0.82 & 0.62 & 0.54 & 0.44 & 0.08\\
+FCU fan (real), wd $10^{-3}$ & 1.00 & 1.00 & 0.69 & 0.65 & 0.41 & 0.14 & 0.00\\
+FCU fan (real), wd 0 & 0.99 & 1.00 & 0.78 & 0.74 & 0.55 & 0.32 & 0.12\\
+FCU valve, wd $10^{-3}$ & 1.00 & 1.00 & 0.89 & 0.72 & 0.51 & 0.11 & 0.09\\
+FCU valve, wd 0 & 1.00 & 1.00 & 1.00 & 0.86 & 0.81 & 0.64 & 0.06\\
+AHU coil valve, wd $10^{-3}$ & 0.81 & 0.78 & 0.84 & 0.68 & 0.60 & 0.49 & 0.50\\
+AHU coil valve, wd 0 & 0.74 & 0.79 & 0.83 & 0.67 & 0.53 & 0.54 & 0.47\\
+\bottomrule\end{tabular}\end{table}
+
+\begin{table}[h]\centering\small
+\caption{Toy replica, all models, normal-vs-target training (mean$\pm$s.d., 3 seeds). Columns \emph{law} give \cref{cor:paradox} at each model's mean detection rate with equal shares ($r=m/k$).}\label{tab:toyall}
+\setlength{\tabcolsep}{2.5pt}\resizebox{\linewidth}{!}{\begin{tabular}{lcccccccccc}\toprule
+Model & Detection & 1-of-3 & law & 2-of-3 & law & BIG1 & Fully st. & Pair-st. & UP & OFF\\\midrule
+LogReg (stats) & 0.98$\pm$0.00 & 0.26$\pm$0.04 & 0.19 & 0.79$\pm$0.02 & 0.73 & 1.00$\pm$0.00 & 0.51$\pm$0.07 & 0.75$\pm$0.05 & 0.00$\pm$0.00 & 0.01$\pm$0.00\\
+Random forest (stats) & 0.95$\pm$0.01 & 0.10$\pm$0.03 & 0.16 & 0.58$\pm$0.12 & 0.62 & 0.14$\pm$0.07 & 0.39$\pm$0.07 & 0.58$\pm$0.07 & 0.00$\pm$0.00 & 0.01$\pm$0.01\\
+Grad. boosting (stats) & 0.97$\pm$0.01 & 0.14$\pm$0.02 & 0.18 & 0.73$\pm$0.08 & 0.68 & 0.26$\pm$0.09 & 0.55$\pm$0.03 & 0.75$\pm$0.04 & 0.00$\pm$0.00 & 0.01$\pm$0.00\\
+MLP & 0.94$\pm$0.01 & 0.15$\pm$0.01 & 0.15 & 0.60$\pm$0.02 & 0.61 & 0.82$\pm$0.01 & 0.16$\pm$0.01 & 0.40$\pm$0.02 & 0.00$\pm$0.00 & 0.01$\pm$0.00\\
+LSTM & 0.94$\pm$0.02 & 0.13$\pm$0.00 & 0.15 & 0.55$\pm$0.03 & 0.60 & 0.65$\pm$0.08 & 0.14$\pm$0.02 & 0.27$\pm$0.02 & 0.00$\pm$0.00 & 0.00$\pm$0.00\\
+Channel-indep. & 0.97$\pm$0.01 & 0.20$\pm$0.03 & 0.18 & 0.73$\pm$0.02 & 0.68 & 0.99$\pm$0.01 & 0.19$\pm$0.02 & 0.44$\pm$0.07 & 0.00$\pm$0.00 & 0.00$\pm$0.00\\
+Capped CI & 0.90$\pm$0.01 & 0.07$\pm$0.01 & 0.13 & 0.42$\pm$0.05 & 0.54 & 0.09$\pm$0.01 & 0.09$\pm$0.01 & 0.23$\pm$0.05 & 0.00$\pm$0.00 & 0.01$\pm$0.00\\
+Reference rule & 0.89$\pm$0.03 & 0.05$\pm$0.01 & 0.13 & 0.21$\pm$0.04 & 0.52 & 0.05$\pm$0.02 & 0.09$\pm$0.03 & 0.33$\pm$0.06 & 0.00$\pm$0.00 & 0.02$\pm$0.00\\
+\bottomrule\end{tabular}}\end{table}
+
+\begin{table}[h]\centering\small
+\caption{Toy replica: 2-of-3 / pair-staggered flag rates per model and remedy (mean over 3 seeds).}\label{tab:toyremedy}
+\setlength{\tabcolsep}{3pt}\begin{tabular}{lccccc}\toprule
+Model & normal only & + fully stag. & + generic (OE) & + channel NM & + CIS\\\midrule
+LogReg (stats) & 0.79 / 0.75 & 0.62 / 0.13 & 0.79 / 0.79 & 0.61 / 0.39 & 0.59 / 0.09\\
+Random forest (stats) & 0.58 / 0.58 & 0.41 / 0.15 & 0.67 / 0.64 & 0.16 / 0.38 & 0.19 / 0.12\\
+Grad. boosting (stats) & 0.73 / 0.75 & 0.46 / 0.13 & 0.77 / 0.76 & 0.18 / 0.53 & 0.21 / 0.10\\
+MLP & 0.60 / 0.40 & 0.52 / 0.29 & 0.56 / 0.36 & 0.26 / 0.29 & 0.34 / 0.10\\
+LSTM & 0.55 / 0.27 & 0.40 / 0.12 & 0.56 / 0.26 & 0.15 / 0.08 & 0.23 / 0.04\\
+Channel-indep. & 0.73 / 0.44 & 0.65 / 0.11 & 0.73 / 0.44 & 0.33 / 0.23 & 0.39 / 0.05\\
+Capped CI & 0.42 / 0.23 & 0.46 / 0.07 & 0.47 / 0.23 & 0.19 / 0.20 & 0.27 / 0.05\\
+\bottomrule\end{tabular}\end{table}
+
+
+\begin{table}[h]\centering\small
+\caption{Real data (LBNL), normal-vs-target training, all models, one seed. Clean mode. \emph{Pairwise law}: 2-of-3 rate predicted from the detection rate and the single-sensor rates (each sensor's share $r_j$ read from its single-sensor flag rate), a test of additivity. FCU values saturate near 1; the AHU coil is informative.}\label{tab:realall}
+\setlength{\tabcolsep}{2.4pt}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{llccccccccc}
+\toprule
+Target & Model & Det. & 1-of-3 & 2-of-3 & pairwise law & BIG1 & Fully st. & Pair-st. & UP & OFF\\
+\midrule
+FCU fan & LogReg (stats) & 1.00 & 0.81 & 1.00 & 1.00 & 0.98 & 0.95 & 0.97 & 0.00 & 0.22\\
+ & Random forest & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 & 0.98 & 0.33\\
+ & Grad.\ boosting & 1.00 & 0.65 & 1.00 & 1.00 & 0.65 & 0.94 & 0.94 & 0.13 & 0.07\\
+ & MLP & 0.99 & 0.69 & 0.95 & 1.00 & 0.96 & 0.76 & 0.87 & 0.00 & 0.17\\
+ & LSTM & 1.00 & 0.79 & 0.97 & 1.00 & 0.98 & 0.85 & 0.92 & 0.48 & 0.61\\
+ & Channel-indep. & 1.00 & 0.88 & 0.99 & 1.00 & 1.00 & 0.95 & 0.95 & 0.00 & 0.00\\
+ & Capped CI & 1.00 & 0.96 & 1.00 & 1.00 & 1.00 & 0.99 & 0.98 & 0.41 & 0.14\\
+ & Reference rule & 1.00 & 0.08 & 0.35 & 0.25 & 0.06 & 0.33 & 0.82 & 0.01 & 0.19\\
+\midrule
+AHU coil & LogReg (stats) & 1.00 & 0.76 & 1.00 & 1.00 & 1.00 & 0.97 & 1.00 & 0.00 & 0.01\\
+ & Random forest & 1.00 & 0.66 & 0.98 & 1.00 & 0.81 & 0.86 & 0.89 & 0.05 & 0.01\\
+ & Grad.\ boosting & 1.00 & 0.45 & 0.81 & 0.98 & 0.52 & 0.57 & 0.54 & 0.03 & 0.00\\
+ & MLP & 1.00 & 0.39 & 0.79 & 0.81 & 0.63 & 0.40 & 0.71 & 0.00 & 0.01\\
+ & LSTM & 1.00 & 0.38 & 0.78 & 0.63 & 0.58 & 0.30 & 0.73 & 0.00 & 0.01\\
+ & Channel-indep. & 1.00 & 0.59 & 0.93 & 0.96 & 0.76 & 0.81 & 0.95 & 0.00 & 0.00\\
+ & Capped CI & 1.00 & 0.47 & 0.96 & 0.98 & 0.41 & 0.31 & 0.50 & 0.01 & 0.06\\
+ & Reference rule & 0.97 & 0.37 & 0.74 & 0.78 & 0.38 & 0.74 & 0.90 & 0.01 & 0.01\\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\begin{table}[h]\centering\small
+\caption{Real never-seen faults (LSTM vs.\ reference rule), flag rate by the number of signature sensors the fault moves in the fault direction; one seed.}\label{tab:realov}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lcccc}
+\toprule
+Target, detector & 0 of 3 & 1 of 3 & 2 of 3 & 3 of 3\\
+\midrule
+FCU fan (clean), LSTM & 0.22 & 0.63 & 0.79 & 0.93\\
+FCU fan (clean), reference rule & 0.06 & 0.13 & 0.36 & 0.44\\
+FCU fan (clean), LSTM + channel near-misses & 0.15 & 0.11 & 0.22 & 0.80\\
+FCU valve, LSTM & 0.18 & 0.59 & 0.65 & 1.00\\
+FCU valve, reference rule & 0.05 & 0.06 & 0.23 & 0.19\\
+AHU coil valve, LSTM & 0.00 & 0.04 & 0.01 & --\\
+\bottomrule
+\end{tabular}
+\end{table}
+

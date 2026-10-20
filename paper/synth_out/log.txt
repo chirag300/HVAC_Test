@@ -14,3 +14,26 @@ S1 law + paradox (k=3, d=20, n=4000 balanced, 1% FPR); mean±sd over 5 seeds
   mlp      δ/σ=3.0  CAP 0.991±0.003  P2 0.785±0.015 (law 0.793)  P1 0.222±0.009 (law 0.226)
 
 S3 temporal teaching set (T=60, C=6, k=3, σ=0.5, δ=1; raw-series 2-layer net); mean±sd over 5 seeds
+  normal vs fault      target 1.000±0.000  fully-stag 0.954±0.009  pair-stag 0.994±0.002
+  + fully staggered    target 1.000±0.000  fully-stag 0.013±0.005  pair-stag 0.946±0.008
+  + pair-staggered     target 1.000±0.000  fully-stag 0.006±0.003  pair-stag 0.179±0.026
+
+S2 separated regime (d=10, σ=0.15, δ=1, 500+500 train); mean±sd over 3 seeds
+  k=2  pos 0.565±0.049 (linear 0.500, bound 0.049)  κ 1.34  flagged 0.980  norm ratio 3.00±0.34 (k=2)  after: flagged 0.203 CAP 1.000
+  k=3  pos 0.727±0.009 (linear 0.667, bound 0.267)  κ 1.27  flagged 1.000  norm ratio 3.82±0.53 (k=3)  after: flagged 0.600 CAP 1.000
+  k=4  pos 0.808±0.023 (linear 0.750, bound 0.404)  κ 1.19  flagged 1.000  norm ratio 5.96±0.84 (k=4)  after: flagged 0.797 CAP 1.000
+  k=6  pos 0.886±0.010 (linear 0.833, bound 0.505)  κ 1.21  flagged 1.000  norm ratio 7.05±1.14 (k=6)  after: flagged 0.978 CAP 1.000
+  k=8  pos 0.911±0.004 (linear 0.875, bound 0.574)  κ 1.20  flagged 1.000  norm ratio 5.81±0.78 (k=8)  after: flagged 1.000 CAP 1.000
+
+S4 recipe (d=10, k=3, σ=0.3; 1000+1000 normal/fault + c near-misses per type); mean±sd over 3 seeds
+  wd=0      0: 0.87±0.03  4: 0.53±0.03  16: 0.48±0.17  64: 0.44±0.08  256: 0.34±0.03   (CAP min 0.987)
+  wd=0.001  0: 0.93±0.00  4: 0.90±0.01  16: 0.77±0.05  64: 0.60±0.05  256: 0.46±0.03   (CAP min 0.997)
+done in 1760s
+
+S2 separated regime (d=10, σ=0.15, δ=1, 500+500 train); mean±sd over 3 seeds
+  k=2  pos 0.565±0.049 (linear 0.500, bound 0.049)  κ 1.34  flagged 0.980  norm ratio 3.00±0.34 (k=2)  after: flagged 0.203 CAP 1.000  R/Rmin 4.03 >= k*gamma/G 1.89 (True)
+  k=3  pos 0.727±0.009 (linear 0.667, bound 0.267)  κ 1.27  flagged 1.000  norm ratio 3.82±0.53 (k=3)  after: flagged 0.600 CAP 1.000  R/Rmin 4.85 >= k*gamma/G 2.24 (True)
+  k=4  pos 0.808±0.023 (linear 0.750, bound 0.404)  κ 1.19  flagged 1.000  norm ratio 5.96±0.84 (k=4)  after: flagged 0.797 CAP 1.000  R/Rmin 7.11 >= k*gamma/G 2.77 (True)
+  k=6  pos 0.886±0.010 (linear 0.833, bound 0.505)  κ 1.21  flagged 1.000  norm ratio 7.05±1.14 (k=6)  after: flagged 0.978 CAP 1.000  R/Rmin 8.56 >= k*gamma/G 3.53 (True)
+  k=8  pos 0.911±0.004 (linear 0.875, bound 0.574)  κ 1.20  flagged 1.000  norm ratio 5.81±0.78 (k=8)  after: flagged 1.000 CAP 1.000  R/Rmin 7.00 >= k*gamma/G 1.25 (True)
+done in 96s
