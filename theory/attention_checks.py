@@ -107,15 +107,24 @@ def check_E(N=400_000):
         l2 = 0.5 * np.mean(expit(-fn) * expit(fn)) + 0.5 * np.mean(expit(ft) * expit(-ft))
         kappa = d * np.mean(expit(fm)) / (2 * k * s**2 * l2)
         lower = d / (8 * k * s**2) * np.exp(k * d**2 / (8 * s**2))
-        th = np.array([0.0, u0, c0]); row = []
-        for rho in (0.0, 0.02, 0.1, 0.4):
+        # implicit-function slope computed numerically: beta'(0) = -(H^-1 v)_beta, H = Hessian of the base loss,
+        # v = gradient of the near-miss loss, both at the Bayes sum rule theta0 (finite differences, common random numbers)
+        th0, h = np.array([0.0, u0, c0]), 1e-3
+        Lb = lambda th: L(th, 0.0)
+        Ln = lambda th: L(th, 1.0)
+        E3 = np.eye(3) * h
+        v = np.array([(Ln(th0 + E3[i]) - Ln(th0 - E3[i])) / (2 * h) for i in range(3)])
+        H = np.array([[(Lb(th0 + E3[i] + E3[j]) - Lb(th0 + E3[i] - E3[j]) - Lb(th0 - E3[i] + E3[j]) + Lb(th0 - E3[i] - E3[j])) / (4 * h * h)
+                       for j in range(3)] for i in range(3)])
+        slope = -np.linalg.solve(H, v)[0]
+        th = th0.copy(); row = []
+        for rho in (0.0, 0.01, 0.1, 0.4):
             th = minimize(L, th, args=(rho,), method="Nelder-Mead", options=dict(xatol=1e-6, fatol=1e-11, maxiter=4000)).x
             row.append((rho, th[0]))
-        b0 = row[0][1]                       # Monte Carlo offset of the rho = 0 minimiser (population value: 0)
-        slope = (row[1][1] - b0) / 0.02
-        ok &= abs(slope - kappa) < 0.15 * kappa and kappa >= lower and all(np.isfinite(b) for _, b in row)
-        print(f"  k={k} delta/sigma={d}: kappa={kappa:.3f} (lower bound {lower:.3f}); fitted slope {slope:.3f}; "
-              + ", ".join(f"beta*({r})={b:.3f}" for r, b in row))
+        betas = [b_ for _, b_ in row]
+        ok &= abs(slope - kappa) < 0.05 * kappa and kappa >= lower and all(np.isfinite(betas)) and betas[1] < betas[2] < betas[3]
+        print(f"  k={k} delta/sigma={d}: kappa (closed form)={kappa:.3f}, implicit-function slope (numerical)={slope:.3f}, "
+              f"lower bound {lower:.3f}; minimiser: " + ", ".join(f"beta*({r:g})={b_:.3f}" for r, b_ in row))
     print("  E:", "PASS" if ok else "CHECK")
     return ok
 
