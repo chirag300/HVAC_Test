@@ -209,7 +209,8 @@ target. `CAPH` is the target with every sensor shifted together for that shorter
 detector trained with pair-staggered negatives that also rejects `CAPH` is using duration, not
 simultaneity; the `+NM+PS+H` training set adds `CAPH` as positives to remove that shortcut.
 
-**Reference output** of the synthetic run (3 seeds) is in `reference_results/transformer_toy/`.
+**Reference output** (3 seeds each): synthetic in `reference_results/transformer_toy/`, LBNL fan-coil
+(`FCU_FanOutletBlockage`, clean splicing) in `reference_results/transformer_fcu/`.
 
 ## Tennessee Eastman (TEP)
 
