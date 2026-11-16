@@ -22,6 +22,7 @@ from sklearn.model_selection import cross_val_score
 
 from lstm_numpy import NumpyLSTMClassifier
 from ci_numpy import NumpyChannelIndependentClassifier
+from transformer_numpy import NumpyChannelTokenTransformer, NumpyPatchTSTClassifier
 
 STAT_NAMES = ["mean", "min", "max", "std", "slope", "last8"]
 FPR = 0.01
@@ -54,7 +55,7 @@ TEST_KINDS = ["CAP", "P1", "P2", "BIG1", "ASYNC", "ASYNC2", "PAIRSTAG", "UP", "O
 def build_construct(kind, W, D, onsets, sig, rng, nonsig="normal", off_pool=None,
                     big=3.0, dip_len=6, keep=None, channel=None, dscale=1.0):
     """
-    kind     : CAP | P<m> (m of k sig channels) | ALLBUT1 | BIG1 | ASYNC | ASYNC2 | PAIRSTAG
+    kind     : CAP | CAPH | P<m> (m of k sig channels) | ALLBUT1 | BIG1 | ASYNC | ASYNC2 | PAIRSTAG
                | UP | OFF | SINGLE (only `channel` deviates) | NORMAL
                ASYNC/ASYNC2 are FULLY staggered (no two signature channels shifted at once).
                PAIRSTAG is the Helly boundary case: one pair of signature channels is never
@@ -103,6 +104,12 @@ def build_construct(kind, W, D, onsets, sig, rng, nonsig="normal", off_pool=None
             bounds = np.linspace(o, T, k + 1).astype(int)
             for seg, c in enumerate(rng.permutation(sig)):
                 G[bounds[seg]:bounds[seg + 1], c] = 1.0
+        elif kind == "CAPH":
+            # duration-matched target: every signature channel shifted at the same time but only for
+            # h = (T-o)//2 steps, the per-channel duration of a PAIRSTAG pattern. If a detector rejects
+            # PAIRSTAG but also rejects CAPH, it learned "short shift", not "not simultaneous".
+            h = (T - o) // 2
+            G[o + h // 2:o + h // 2 + h, sig] = 1.0
         elif kind == "PAIRSTAG":
             pairs = [(i, j) for i in range(k) for j in range(i + 1, k)]
             a, b = pairs[(n if keep is None else int(keep[n])) % len(pairs)]
@@ -206,7 +213,20 @@ DETECTORS = {
     # same, but each channel's evidence is bounded (tanh): can represent the AND (theory, Prop. cap)
     "Capped CI (raw series)": ("raw48", lambda s: NumpyChannelIndependentClassifier(
         hidden=32, epochs=30, seed=s, capped=True)),
+    # transformers (transformer_numpy.py). Full attention: one token per sensor, self-attention
+    # across sensors, softmax-attention pooling. Pooling-only: the theory's model (no mixing, so
+    # the pooling weights over sensors can be read as the learned focus).
+    "Transformer (sensor tokens)": ("raw48", lambda s: NumpyChannelTokenTransformer(seed=s, epochs=30)),
+    "Attention pool (sensor tokens)": ("raw48", lambda s: NumpyChannelTokenTransformer(
+        seed=s, epochs=30, self_attn=False)),
+    # channel-independent patch transformer, additive over sensors; RevIN bounds each sensor's evidence
+    "PatchTST (channel-indep.)": ("raw48", lambda s: NumpyPatchTSTClassifier(seed=s, epochs=30)),
+    "PatchTST + RevIN": ("raw48", lambda s: NumpyPatchTSTClassifier(seed=s, epochs=30, revin=True)),
 }
+TRANSFORMERS = ["Transformer (sensor tokens)", "Attention pool (sensor tokens)",
+                "PatchTST (channel-indep.)", "PatchTST + RevIN"]
+# the original battery keeps its original model set unless transformers are asked for (--models)
+DEFAULT_MODELS = [m for m in DETECTORS if m not in TRANSFORMERS]
 
 
 def _inputs(kind, X):

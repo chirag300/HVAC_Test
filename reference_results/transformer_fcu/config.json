@@ -1,0 +1,37 @@
+{
+ "models": [
+  "Transformer (sensor tokens)",
+  "Attention pool (sensor tokens)",
+  "PatchTST (channel-indep.)",
+  "PatchTST + RevIN",
+  "MLP (raw series)",
+  "Channel-indep. (raw series)",
+  "Capped CI (raw series)"
+ ],
+ "seeds": [
+  0,
+  1,
+  2
+ ],
+ "n_train": 4000,
+ "n_val": 2000,
+ "n_test": 1000,
+ "rhos": [
+  0.0,
+  0.1,
+  0.2,
+  0.4
+ ],
+ "snr_scales": [
+  0.5,
+  1.0
+ ],
+ "strengths": [
+  0.5,
+  1.0,
+  1.5,
+  2.0,
+  3.0,
+  5.0
+ ]
+}

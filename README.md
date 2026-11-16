@@ -24,6 +24,9 @@ CPU Python with numpy, pandas, scikit-learn, matplotlib.
 | `theory/theory.tex`, `theory/theory.pdf` | Theory notes: statements and full proofs (why the broad rule is learned, composite null, near-miss supervision, Helly timing negatives, sample counts) |
 | `theory/theory_checks.py` | Numerical checks C1–C9 of every theorem (`python theory/theory_checks.py [C1 C5 ...]`) |
 | `theory/make_figures.py` | Theory figures from `theory/checks_out/results.json` |
+| `transformer_numpy.py` | NumPy transformers with manual backprop + Adam: sensor-token transformer (one token per sensor, self-attention, softmax attention pooling), attention-pooling-only variant (the model the attention theorems analyse), channel-independent PatchTST (additive head) with optional RevIN. `python transformer_numpy.py` = gradient checks |
+| `run_transformer.py` | Transformer tests of the theory: battery + false-alarm law, soft-AND sweep, look-alike strength sweep (toy or LBNL) |
+| `theory/attention_checks.py` | Numerical checks of the attention theorems (A, B, B', soft AND E) and the near-miss sample-size bounds (D) |
 | `tep_to_csv.py` | Tennessee Eastman (Braatz runs) -> LBNL-style CSVs for `run_real.py` (see TEP note below) |
 | `make_fake_lbnl.py` | Fake dataset in LBNL layout with a known answer, for smoke tests |
 | `run_all.sh`, `smoke_test.sh` | One-shot pipelines |
@@ -34,6 +37,7 @@ CPU Python with numpy, pandas, scikit-learn, matplotlib.
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 python lstm_numpy.py          # gradient check -> PASS
+python transformer_numpy.py   # transformer gradient checks -> PASS
 bash smoke_test.sh            # ~5 min, fake data, exercises every step
 ```
 
@@ -168,6 +172,45 @@ Every REPORT.md now also has a "Theory check" table: each model's partial-match 
 the rates the theory predicts from its detection rate alone and from its detection +
 single-channel rates (HA). Close agreement means the model behaves like a sum-of-evidence
 detector.
+
+## Transformer tests
+
+Three transformer detectors (all NumPy, gradient-checked) plus the MLP / channel-independent
+baselines, on the toy source or an LBNL dataset:
+
+| Model | What it is | Theory prediction |
+|---|---|---|
+| `Transformer (sensor tokens)` | per-sensor MLP embedding + sensor id, one self-attention layer across sensors, softmax attention pooling with a learned query, linear head | sum rule without near-misses; AND-like with them |
+| `Attention pool (sensor tokens)` | same without self-attention: the exact model of Theorems A, B, B', E | learned focus β̂ ≤ 0 (averaging or OR-like) without near-misses; finite β̂ > 0 (soft AND) rising with near-miss share and signal |
+| `PatchTST (channel-indep.)` | patches per sensor, shared transformer encoder, pooled per-sensor features, linear head: additive across sensors by construction | stays fooled by partial matches; flag rate → 1 as look-alikes get louder |
+| `PatchTST + RevIN` | same with per-series instance normalisation (bounded evidence per sensor) | resists loud single-sensor look-alikes (BIG1) without any near-misses |
+
+```bash
+python transformer_numpy.py                      # gradient checks -> 4 x PASS
+python theory/attention_checks.py                # numerical checks of the attention theorems (~5 min)
+python run_transformer.py --out results/transformer_toy --seeds 0,1,2            # synthetic, ~1.5 h on 2 CPUs
+python run_transformer.py --data data/raw/fcu --out results/transformer_fcu \
+    --target FCU_FanOutletBlockage --seeds 0,1,2 --rhos 0,0.1,0.2,0.4 --snr-scales 0.5,1
+python run_transformer.py --out /tmp/tf_quick --seeds 0 --quick                   # ~10 min sanity run
+python run_real.py --data data/raw/fcu --out results/fcu --models all+transformers  # transformers in the main battery
+```
+
+| Step (`--steps`) | What it does | Theory |
+|---|---|---|
+| `battery` | Every model trained on `plain` (normal vs target), `+NM` (+ channel near-misses), `+NM+PS` (+ channel and pair-staggered near-misses), `+NM+PS+H` (same, + duration-matched positives `CAPH`); flag rates on NORMAL, CAP, CAPH, P1..P(k-1), BIG1, ASYNC, PAIRSTAG; each model's P(k-1) rate next to the false-alarm law's prediction from its own detection rate; for the attention-pooling model the learned focus β̂ and the left-out-sensor attention ratio | training optimum + false-alarm law; Thms A, B, B'; minimal supervision |
+| `softand` | Attention-pooling model trained with near-miss share ρ (`--rhos`) at fault scales `--snr-scales` → `fig_softand.png` | Theorem E (soft AND) |
+| `strength` | `plain` / `+NM` models tested on all-but-one and single-sensor look-alikes × M (`--strengths`) → `fig_strength.png` | composite null: additive detectors lose all power; bounded evidence does not |
+
+Every cell is cached in `battery.json` / `softand.json` / `strength.json`, so an interrupted run
+resumes; `--steps ""` just rebuilds `REPORT_transformer.md` and the figures from the caches.
+
+**Duration control (`CAPH`).** Pair-staggered windows shift each sensor for less time than the
+target. `CAPH` is the target with every sensor shifted together for that shorter duration. A
+detector trained with pair-staggered negatives that also rejects `CAPH` is using duration, not
+simultaneity; the `+NM+PS+H` training set adds `CAPH` as positives to remove that shortcut.
+
+**Reference output** (3 seeds each): synthetic in `reference_results/transformer_toy/`, LBNL fan-coil
+(`FCU_FanOutletBlockage`, clean splicing) in `reference_results/transformer_fcu/`.
 
 ## Tennessee Eastman (TEP)
 

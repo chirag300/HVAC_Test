@@ -6,6 +6,8 @@ cd "$(dirname "$0")"
 
 python lstm_numpy.py
 python run_toy.py --out results/toy
+python transformer_numpy.py
+python run_transformer.py --out results/transformer_toy --seeds 0,1,2
 
 python download.py sdahu fcu rtu nist   # follow the printed manual step if LBNL shows a form
 
@@ -22,4 +24,8 @@ if [ -f data/raw/nist/fdd_heat_pump_cooling_1416seer_longshort_alldata_2019.xlsx
   python run_nist.py --xlsx data/raw/nist/fdd_heat_pump_cooling_1416seer_longshort_alldata_2019.xlsx --inspect
   echo "NIST: choose --fault-col / --cond-cols from the listing above, then run run_nist.py (see README)."
 fi
-echo "Reports: results/*/*/*/REPORT.md"
+if [ -n "$(find data/raw/fcu -name '*.csv' 2>/dev/null | head -1)" ]; then
+  python run_transformer.py --data data/raw/fcu --out results/transformer_fcu --target FCU_FanOutletBlockage \
+    --seeds 0,1,2 --rhos 0,0.1,0.2,0.4 --snr-scales 0.5,1
+fi
+echo "Reports: results/*/*/*/REPORT.md, results/transformer_*/REPORT_transformer.md"
