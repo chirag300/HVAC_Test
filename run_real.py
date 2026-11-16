@@ -73,7 +73,7 @@ def main():
     ap.add_argument("--scales", default="0.25,0.5,0.75,1,1.5",
                     help="fault-deviation multipliers for the scale step")
     ap.add_argument("--block", default="7D", help="train/val/test split block length (pandas offset)")
-    ap.add_argument("--models", default="all", help="comma list of model names or 'all'")
+    ap.add_argument("--models", default="all", help="comma list of model names, 'all' (original models) or 'all+transformers'")
     ap.add_argument("--lstm-epochs", type=int, default=30)
     ap.add_argument("--lstm-hidden", type=int, default=32)
     ap.add_argument("--cache", default="data/cache")
@@ -84,7 +84,9 @@ def main():
 
     L.DETECTORS["LSTM (raw series)"] = ("raw48", lambda s: L.NumpyLSTMClassifier(
         hidden=a.lstm_hidden, epochs=a.lstm_epochs, seed=s))
-    models = list(L.DETECTORS) if a.models == "all" else [m.strip() for m in a.models.split(",")]
+    models = list(L.DEFAULT_MODELS) if a.models == "all" else [m.strip() for m in a.models.split(",")]
+    if a.models == "all+transformers":
+        models = list(L.DETECTORS)
     variants = ["clean", "real"] if a.nonsig == "both" else [a.nonsig]
 
     t0 = time.time()

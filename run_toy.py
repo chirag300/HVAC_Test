@@ -83,7 +83,7 @@ def main():
     ap.add_argument("--scales", default="0.25,0.5,0.75,1,1.5")
     a = ap.parse_args()
     cfg = dict(n_train=4000, n_val=2000, n_test=2000, n_other=1000, seed=a.seed, force=a.force,
-               models=list(L.DETECTORS), sweep_sizes=[500, 2000, 8000, 20000],
+               models=list(L.DEFAULT_MODELS), sweep_sizes=[500, 2000, 8000, 20000],
                sweep_prev=[0.1, 0.5, 0.9], nonsig="normal",
                nm_counts=[int(x) for x in a.nm_counts.split(",")],
                nm_wd=[float(x) for x in a.nm_wd.split(",") if x],
