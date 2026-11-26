@@ -1,0 +1,37 @@
+\begin{thebibliography}{5}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Abbe et~al.(2023)Abbe, Bengio, Lotfi, and Rizk]{abbe2023}
+Emmanuel Abbe, Samy Bengio, Aryo Lotfi, and Kevin Rizk.
+\newblock Generalization on the unseen, logic reasoning and degree curriculum.
+\newblock In \emph{Proceedings of the 40th International Conference on Machine
+  Learning}, volume 202 of \emph{Proceedings of Machine Learning Research},
+  pages 31--60, 2023.
+
+\bibitem[Bretagnolle and Huber(1979)]{bretagnolle1979}
+Jean Bretagnolle and Catherine Huber.
+\newblock Estimation des densit\'es: risque minimax.
+\newblock \emph{Zeitschrift f\"ur Wahrscheinlichkeitstheorie und verwandte
+  Gebiete}, 47:\penalty0 119--137, 1979.
+
+\bibitem[Goldman and Kearns(1995)]{goldman1995}
+Sally~A. Goldman and Michael~J. Kearns.
+\newblock On the complexity of teaching.
+\newblock \emph{Journal of Computer and System Sciences}, 50\penalty0
+  (1):\penalty0 20--31, 1995.
+
+\bibitem[Tsybakov(2009)]{tsybakov2009}
+Alexandre~B. Tsybakov.
+\newblock \emph{Introduction to Nonparametric Estimation}.
+\newblock Springer, New York, 2009.
+
+\bibitem[Winston(1970)]{winston1970}
+Patrick~H. Winston.
+\newblock \emph{Learning Structural Descriptions from Examples}.
+\newblock PhD thesis, Massachusetts Institute of Technology, 1970.
+
+\end{thebibliography}

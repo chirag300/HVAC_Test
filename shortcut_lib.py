@@ -20,7 +20,6 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import cross_val_score
 
-from lstm_numpy import NumpyLSTMClassifier
 from ci_numpy import NumpyChannelIndependentClassifier
 from transformer_numpy import NumpyChannelTokenTransformer, NumpyPatchTSTClassifier
 
@@ -206,7 +205,6 @@ DETECTORS = {
     "MLP (raw series)": ("raw12", lambda s: MLPClassifier(
         hidden_layer_sizes=(128, 64), solver="adam", max_iter=300, early_stopping=True,
         random_state=s)),
-    "LSTM (raw series)": ("raw48", lambda s: NumpyLSTMClassifier(hidden=32, epochs=30, seed=s)),
     # per-channel shared encoder + linear head: additive across channels by construction
     "Channel-indep. (raw series)": ("raw48", lambda s: NumpyChannelIndependentClassifier(
         hidden=32, epochs=30, seed=s)),
@@ -330,7 +328,7 @@ def subset_cv_accuracy(X, y, C, subsets, seed=0):
 
 
 def gb_stat_importance(fitted, C, sig):
-    """Gradient-boosting importance summed per statistic over signature channels (slide 16)."""
+    """Gradient-boosting importance summed per statistic over signature channels."""
     imp = fitted.model.feature_importances_
     return {s: float(sum(imp[i * C + c] for c in sig)) for i, s in enumerate(STAT_NAMES)}
 
