@@ -1,6 +1,6 @@
 """
 run_transformer.py -- transformer tests of the theory (sum vs. AND), on the toy/synthetic source
-or on an LBNL dataset. NumPy only, same sources and constructs as run_toy.py / run_real.py.
+or on an LBNL dataset. NumPy only. These are the experiments of the CS 886 report "Sum Instead of AND".
 
     python run_transformer.py --out results/transformer_toy                     # synthetic (toy)
     python run_transformer.py --out results/transformer_toy --seeds 0,1,2 --quick
@@ -39,7 +39,6 @@ from statistics import NormalDist
 import numpy as np
 
 import shortcut_lib as L
-from experiments import make_train
 
 _N = NormalDist()
 TF_MODELS = ["Transformer (sensor tokens)", "Attention pool (sensor tokens)",
@@ -111,6 +110,27 @@ def focus_stats(src, model, X_cap, X_nm):
 TRAIN_SETS = {"plain": [], "+NM": [("ALLBUT1", 0.5)], "+NM+PS": [("ALLBUT1", 0.25), ("PAIRSTAG", 0.25)],
               "+NM+PS+H": [("ALLBUT1", 0.25), ("PAIRSTAG", 0.25)]}
 EXTRA_POS = {"+NM+PS+H": [("CAPH", 0.25)]}
+
+
+def make_train(src, n, prev, rng, extra_kind=None, n_extra=0, extras=None, ckw=None):
+    """extras: list of (construct kind, count) added as label-0 targeted negatives.
+    ckw: extra keyword arguments for every construct (e.g. dscale for the signal sweep)."""
+    ckw = ckw or {}
+    n_pos = int(round(n * prev))
+    Xp = src.construct("train", "CAP", n_pos, rng, **ckw)
+    Xn = src.train_negatives(n - n_pos, rng)
+    parts, ys = [Xp, Xn], [np.ones(len(Xp)), np.zeros(len(Xn))]
+    extras = list(extras or []) + ([(extra_kind, n_extra)] if extra_kind else [])
+    for kind, cnt in extras:
+        if cnt <= 0:
+            continue
+        Xe = src.construct("train", kind, cnt, rng, **ckw)
+        parts.append(Xe)
+        ys.append(np.zeros(len(Xe)))
+    X = np.concatenate(parts)
+    y = np.concatenate(ys)
+    perm = rng.permutation(len(X))
+    return X[perm], y[perm]
 
 
 def make_train_sets(src, n, tset, rng):
@@ -369,7 +389,7 @@ def main():
         src = LBNLSource(a.data, target=a.target, k=a.k, block=a.block, min_dev=a.min_dev, nonsig=a.nonsig,
                          cache_dir=a.cache, resample=None if a.resample.lower() == "none" else a.resample)
     else:
-        from run_toy import ToySource
+        from synthetic_data import ToySource
         src = ToySource()
     os.makedirs(a.out, exist_ok=True)
     _save(os.path.join(a.out, "config.json"), cfg)

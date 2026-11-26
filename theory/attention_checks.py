@@ -1,13 +1,16 @@
-"""Numerical checks of the attention and sample-size results (NumPy + SciPy only).
+"""Numerical checks of the attention results of the CS 886 report "Sum Instead of AND" (NumPy + SciPy only).
 
-  A   no near-misses: at the best sum rule the attention-logit gradient is zero (uniform attention is stationary)
-  B   with channel near-misses: dL/dq_a = u* pi_nm delta^2 (k-1)/k^2 E_nm[sig f] > 0  (push toward the weakest sensor)
-  B'  with C-k irrelevant sensors: targets push attention toward the MOST evidence (OR-like), near-misses push back
-  E   soft AND: optimal temperature beta*(rho) ~ kappa * rho, kappa = delta E_nm[sig f0] / (2 k sigma^2 E_b[l''(y f0)])
-  D   near-miss sample size: IU learner fails with prob <= eta at the upper bound; lower bound for any learner
+  A   Theorem 3(a): no near-misses, C = k: at the best SUM rule the attention-logit gradient is zero
+  B   Theorem 3(b): with channel near-misses, dL/dq_a = u* pi_nm delta^2 (k-1)/k^2 E_nm[sig f] > 0
+      (push toward the weakest sensor, i.e. beta = -q_a increases)
+  B'  Theorem 3(c): with C - k irrelevant sensors, Fault 1 pushes attention toward the largest evidence (OR-like)
+  E   Theorem 4: soft AND, optimal inverse temperature beta*(rho) ~ kappa * rho,
+      kappa = delta E_nm[sig f0] / (2 k sigma^2 E_b[l''(y f0)])
+  D   Proposition 1(c) of the companion note (paper/Seth_CS886_near_miss_propositions.pdf): near-miss sample size
 
 Population quantities are large Monte Carlo averages with common random numbers, so finite-difference
-gradients are accurate. Logits are q_a * a_j (q_a > 0 = evidence-seeking / OR-like, q_a < 0 = AND-like).
+gradients are accurate. Logits are q_a * a_j (q_a > 0 = evidence-seeking / OR-like, q_a < 0 = AND-like;
+the report's inverse temperature is beta = -q_a).
 
     python theory/attention_checks.py            # all checks (~2-4 min CPU)
     python theory/attention_checks.py E D        # a subset

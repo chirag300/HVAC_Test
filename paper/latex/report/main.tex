@@ -1,0 +1,235 @@
+%%%%%%%% CS 886 final project report, ICML 2026 template %%%%%%%%
+\documentclass{article}
+
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{placeins}
+\usepackage{array}
+\usepackage{hyperref}
+\newcommand{\theHalgorithm}{\arabic{algorithm}}
+
+% Course report: the preprint option prints the author (the review option would hide it).
+\usepackage[preprint]{icml2026}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{amsthm}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,decorations.pathreplacing}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.17}
+\usepackage[capitalize,noabbrev]{cleveref}
+
+\definecolor{Navy}{HTML}{17324D}
+\definecolor{Blue}{HTML}{245E9A}
+\definecolor{Muted}{HTML}{5A6775}
+\definecolor{Red}{HTML}{B03A2E}
+\definecolor{SensA}{HTML}{2B2D7C}
+\definecolor{SensB}{HTML}{9B3FB5}
+\definecolor{SensC}{HTML}{B8860B}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\sig}{\operatorname{sig}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\Cov}{\operatorname{Cov}}
+\newcommand{\softmax}{\operatorname{softmax}}
+\newcommand{\nm}{\mathrm{nm}}
+\newcommand{\bdet}{\beta_{\mathrm{det}}}
+
+\icmltitlerunning{Sum Instead of AND}
+% Corresponding-author line without an email (set here so the style file is unchanged).
+% To add an email instead, delete these two lines and use \icmlcorrespondingauthor{Chirag Seth}{email} below.
+\makeatletter\gdef\icmlcorrespondingauthor@text{Chirag Seth}\makeatother
+
+\begin{document}
+
+\twocolumn[
+  \icmltitle{Sum Instead of AND: Why Fault Detectors Flag Look-Alikes, \\
+    and How Near-Misses Teach Attention the Conjunction}
+
+  \begin{icmlauthorlist}
+    \icmlauthor{Chirag Seth}{uw}
+  \end{icmlauthorlist}
+  \icmlaffiliation{uw}{Department of Management Science and Engineering, University of Waterloo, Waterloo, Ontario, Canada}
+  \icmlkeywords{fault detection, attention, learning theory, hypothesis testing, conjunctions}
+  \vskip 0.3in
+]
+
+\printAffiliationsAndNotice{Final project report for CS 886 (Learning Theory for Modern AI), University of Waterloo, Fall 2026. }
+
+\begin{abstract}
+Learned fault detectors are trained to separate normal operation from a target fault but are deployed against a composite null hypothesis containing every condition that shifts a proper subset of the fault's $k$ sensors. Under Gaussian per-sensor evidence, the most powerful training detector thresholds the sum of the evidence (SUM), and its alarm rate on such conditions is a closed-form function of its detection rate. For deployment, the intersection--union test (AND) is within a factor $k$ of optimal, whereas every non-negative linear detector loses all power once look-alikes reach $k/(k-1)$ times the fault strength. For softmax attention pooling over sensor tokens, the inverse temperature $\beta$ interpolates between OR, SUM and AND. The gradient of the logistic loss in $\beta$ at uniform attention is derived in closed form: normal-versus-fault data keep attention at the SUM or drive it toward an OR, whereas \emph{near-misses}, conditions that omit exactly one signature sensor, drive it toward the AND. With near-misses and the head fitted at each step, every non-negative initialisation converges to an AND, and under noise the minimiser is a soft AND with $\beta^\star=\kappa\rho+O(\rho^2)$ in the near-miss share $\rho$. In transformer detectors on synthetic and LBNL fan-coil data, near-misses reverse the sign of the learned inverse temperature and reduce alarms on two-of-three look-alikes from 0.78--0.99 to 0.11--0.20 and on unseen one-sensor look-alikes to 0.02--0.06.
+\end{abstract}
+
+\section{Introduction}\label{sec:intro}
+
+Fault detection and diagnosis (FDD) software for building equipment raises an alarm when a known fault appears in multivariate sensor data \citep{katipamula2005a,kim2018}; faults and degraded operation account for an estimated 15--30\% of commercial-building energy use \citep{katipamula2005b}. A fault shifts a characteristic set of sensors jointly, its \emph{signature}. Rule-based FDD encodes the signature as a conjunction of symptoms \citep{house2001}, but each rule requires thresholds tuned to the fault and the unit, and such rules raise many false alarms in practice \citep{andersen2024}. Learned detectors, and in particular transformers with one token per sensor, are instead trained on labelled normal and faulty windows, which are usually simulated \citep{zhao2019,granderson2023}.
+
+Such a detector is trained to separate normal operation from one target fault, Fault~1, and is deployed against every other condition that shifts part of the signature. On the LBNL fan-coil benchmark \citep{granderson2023}, a sensor-token transformer detects a fan-outlet blockage, which shifts three sensors, in every window at a 1\% false-alarm rate, yet it raises alarms on 99\% of windows in which two of the three sensors shift, 96\% in which one shifts and 99.8\% in which one shifts strongly; the conjunction of the three symptoms raises 33\%, 8\% and 7\%. These conditions are called \emph{look-alikes} (\cref{fig:windows}).
+
+\begin{figure}[t]
+  \centering
+  \input{fig_windows.tex}
+  \vspace{-2mm}
+  \caption{Three sensors over a window (illustration). Training contains only Normal and Fault 1. Look-alikes A and B reproduce part of Fault~1's pattern but are different conditions.}\label{fig:windows}
+  \vspace{-3mm}
+\end{figure}
+
+The failure concerns the logical form of the detector rather than its features. The training data contain only the two extremes ``no sensor shifted'' and ``all $k$ sensors shifted'', which a SUM rule (threshold the total evidence) and an AND rule (require every sensor) separate equally well; only the deployment data distinguish them. Unlike shortcut learning \citep{geirhos2020,shah2020}, every feature is causal, and the error lies in how the features are combined.
+
+This report treats training and deployment as two hypothesis tests and analyses which rule softmax attention learns. The SUM solves the training problem, with a closed-form law for its alarm rate on look-alikes (\cref{thm:sum}), while deployment requires the AND, which no non-negative weighted sum replaces (\cref{thm:and}). Near-misses, the look-alikes that omit exactly one signature sensor, drive the inverse temperature of attention pooling toward the AND, and training from any AND-leaning initialisation ends at an AND (\cref{thm:attn}); under noise the minimiser is a soft AND (\cref{thm:soft}). Transformer detectors follow these predictions (\cref{sec:exp}), and \cref{tab:known} separates prior results from new ones.
+
+\begin{table}[t]
+  \caption{Prior results and new results. Related theory \citep{tarzanagh2023,abbe2023,bhattamishra2023} is discussed in \cref{app:related}.}\label{tab:known}
+  \vspace{-1mm}
+  \centering\footnotesize\setlength{\tabcolsep}{3pt}
+  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.21\columnwidth}>{\raggedright\arraybackslash}p{0.39\columnwidth}>{\raggedright\arraybackslash}p{0.34\columnwidth}@{}}
+    \toprule
+    Result & Known (tool or part) & New\\
+    \midrule
+    \cref{thm:sum} & (i) Neyman--Pearson & (ii) false-alarm law\\
+    \cref{thm:and} & (a) Neyman--Pearson; (b) IU test \citep{berger1982} & (c,d) failure of sums\\
+    \cref{thm:attn} & softmax calculus & $\partial_\beta L$ in closed form; (d) convergence\\
+    \cref{thm:soft} & implicit function theorem & soft AND, slope $\kappa$, basin\\
+    \bottomrule
+  \end{tabular}
+  \vspace{-3mm}
+\end{table}
+
+\section{Problem Setting}\label{sec:setup}
+
+A window holds $T$ time steps of $C$ sensors, and Fault~1 shifts a set $S$ of $k\ge2$ sensors from an onset. Each sensor is summarised by its \emph{evidence}
+\[
+  a_j=\pm\,\frac{\text{mean before onset}-\text{mean after onset}}{\text{noise level of sensor }j},
+\]
+signed so that Fault~1 gives $a_j>0$. The theory works with $a\in\R^C$, and the experiments use raw windows (\cref{app:setup}).
+
+\begin{assumption}[Gaussian evidence]\label{ass:gauss}
+Normal: $a\sim N(0,\sigma^2I)$. Fault~1: $a\sim N(\delta\one_S,\sigma^2I)$, $\delta>0$, label $y=+1$. A \emph{look-alike} has $a\sim N(\mu,\sigma^2I)$ with $\operatorname{supp}\mu\subsetneq S$ and $0\le\mu_j\le M$, label $y=-1$. A \emph{near-miss of type $j$} is the look-alike $\mu=\delta(\one_S-e_j)$.
+\end{assumption}
+
+\begin{definition}[Valid detector]\label{def:valid}
+A detector $\phi:\R^C\to\{0,1\}$ has false-alarm rate $\alpha=\Pr_0(\phi=1)$ on normal windows and detection rate $\bdet=\Pr_{\text{Fault 1}}(\phi=1)$. It is \emph{valid} if it also alarms with probability at most $\alpha$ under every look-alike.
+\end{definition}
+
+Training therefore poses the simple test ``normal or Fault~1'', and deployment the composite test ``Fault~1, or normal or any look-alike''.
+
+\begin{definition}[Attention over sensors]\label{def:attn}
+Each sensor is a token, and attention pooling gives the logits $q_aa_j+b_j$. The \emph{reduced attention model} keeps $\theta=(\beta,u,c)$ with $\beta=-q_a$, the \emph{inverse temperature} of the softmax:
+\[
+  f_\theta(a)=u\,m_\beta(a)+c,\quad m_\beta(a)=\textstyle\sum_{j}\softmax(-\beta a)_j\,a_j .
+\]
+At $\beta=0$, $m_0=\bar a$ (the SUM); $\beta\to+\infty$ gives $\min_ja_j$ (the AND); $\beta\to-\infty$ gives $\max_ja_j$ (an OR).
+\end{definition}
+
+Training minimises $L(\theta)=\E\,\ell(yf_\theta(a))$, $\ell(z)=\log(1+e^{-z})$, over normal, Fault~1 and near-miss windows with shares $\pi_0,\pi_t,\pi_\nm$. The \emph{profile loss} $G(\beta)=\min_{u,c}L(\beta,u,c)$ describes training in which the head $(u,c)$ is fitted between updates of $\beta$, and the \emph{profile flow} is $\dot\beta=-G'(\beta)$. Throughout, $\sig(z)=1/(1+e^{-z})$, $\Phi$ is the standard normal CDF and $z_\alpha=\Phi^{-1}(1-\alpha)$.
+
+\section{Main Results}\label{sec:theory}
+
+\begin{theorem}[Optimal training detector and false-alarm law]\label{thm:sum}
+(i) If the normal and Fault~1 laws factor across sensors, the most powerful detector at any level $\alpha$ thresholds $\sum_{j\in S}\log\frac{p_{1j}}{p_{0j}}(a_j)$; under \cref{ass:gauss} it thresholds $\sum_{j\in S}a_j$.
+(ii) Let a linear score $w^\top a$ have false-alarm rate $\alpha$ and detection rate $\bdet$, with Gaussian noise of any covariance. A condition with mean $h$ raises an alarm with probability
+\[
+  \Pr_h(\text{alarm})=\Phi\big(r\,(\Phi^{-1}(\bdet)+z_\alpha)-z_\alpha\big),
+\]
+where $r=w^\top h/(w^\top\delta\one_S)$ is the share of Fault~1's signal it carries.
+\end{theorem}
+
+For the SUM and a look-alike that shifts $m$ of the $k$ sensors, $r=m/k$, so the alarm rate on look-alikes increases with the detection rate. With $k=3$, $\delta/\sigma=3$ and $\alpha=1\%$, the SUM detects 0.998 of Fault~1 and flags 0.87 of two-of-three look-alikes. The proof (\cref{app:thm1}) factorises the likelihood ratio into per-sensor terms that are linear in $a_j$; in (ii), calibration fixes the threshold and the detection rate fixes the signal-to-noise ratio of the score.
+
+\begin{theorem}[Validity ceiling and failure of sums]\label{thm:and}
+(a) If $M\ge\delta$, every valid detector has $\bdet\le\Phi(\delta/\sigma-z_\alpha)$. (b) The AND test $\one\{\min_{j\in S}a_j/\sigma>z_\alpha\}$ \citep{berger1982} is valid for every $M$ and, if $M\ge\delta$, misses Fault~1 at most $k$ times as often as the best valid detector. (c) The best valid detector $\one\{w^\top a>t\}$ with $w\ge0$ has
+\[
+  \bdet=\Phi\Big(\frac{k\delta-(k-1)M}{\sigma\sqrt k}-z_\alpha\Big)
+\]
+while $M<\frac{k}{k-1}\delta$, and $\bdet\le\alpha$ once $M\ge\frac{k}{k-1}\delta$. (d) If $M=\infty$, no additive detector $\one\{\sum_j\psi_j(a_j)>t\}$ with some $\psi_j$ nondecreasing and unbounded is valid at a finite threshold.
+\end{theorem}
+
+The near-miss that omits sensor $j$ differs from Fault~1 only in $a_j$, which caps every valid detector; in (c), the worst look-alike $(M,\dots,M,0)$ has total $(k-1)M$, which reaches Fault~1's total $k\delta$ at $M=\frac{k}{k-1}\delta$ (\cref{app:thm2}). The obstruction lies in the form of the rule, so additional data cannot repair a sum.
+
+\begin{theorem}[Inverse-temperature gradient and training dynamics]\label{thm:attn}
+Let $(u^\star,c^\star)$ be the best SUM rule ($\beta=0$) and $f=u^\star\bar a+c^\star$. Then $u^\star>0$ and
+\[
+  \partial_\beta L\big|_{\text{SUM}}
+  =u^\star\big(\pi_t\Delta_t\E_t\sig(-f)-\pi_\nm\Delta_\nm\E_\nm\sig(f)\big),
+\]
+where $\Delta_c=\frac1C\|\mu_c-\bar\mu_c\one\|^2$ is the spread of class $c$'s mean across sensors, $\Delta_t=\frac{\delta^2k(C-k)}{C^2}$ and $\Delta_\nm=\frac{\delta^2(k-1)(C-k+1)}{C^2}$. Hence
+(a) without near-misses and with $C=k$, the SUM is the global minimiser;
+(b) with near-misses and $C=k$, $\partial_\beta L<0$, so $\beta$ rises toward the AND;
+(c) without near-misses and with $C>k$, $\partial_\beta L>0$, so $\beta$ falls toward an OR;
+(d) with near-misses and $C=k$, the profile flow from every $\beta(0)\ge0$ satisfies $\beta(t)>0$ for $t>0$ and $\beta(t)\to\beta_\infty\in(0,+\infty]$, a soft AND ($G'(\beta_\infty)=0$) or the hard AND ($\beta_\infty=+\infty$).
+\end{theorem}
+
+Raising $\beta$ lowers a window's attention average at the rate of its spread $S^2(a)=\frac1C\sum_j(a_j-\bar a)^2$ (\cref{lem:calc}), whose conditional mean is a noise part $s_0$, common to all classes, plus $\Delta_c$ (\cref{lem:gauss}); the noise part multiplies $\partial L/\partial c=0$ and cancels. Part (d) holds because $G'(0)<0$ by (b) and a one-dimensional gradient flow cannot cross a critical point (\cref{app:thm3}).
+
+\begin{theorem}[Soft conjunction under noise]\label{thm:soft}
+Let $C=k$, $L_b=\frac12\E_0\ell(-f)+\frac12\E_t\ell(f)$ and $L(\theta;\rho)=(1-\rho)L_b+\rho\,\E_\nm\ell(-f)$. There are $\epsilon,b>0$ such that for $\rho\in[0,\epsilon)$: (i) a $C^1$ curve of strict local minimisers starts at the SUM rule $\theta_0=(0,\frac{k\delta}{\sigma^2},-\frac{k\delta^2}{2\sigma^2})$, with
+\[
+  \beta^\star(\rho)=\kappa\rho+O(\rho^2),\qquad
+  \kappa=\frac{\delta\,\E_\nm[\sig(f_0)]}{2k\sigma^2\,\E_b[\ell''(yf_0)]},
+\]
+$\kappa\ge\frac{\delta}{8k\sigma^2}e^{k\delta^2/(8\sigma^2)}$ and $f_0$ the score of $\theta_0$; (ii) for $\rho>0$, $\beta^\star(\rho)$ is the only critical point of the profile loss in $(-b,b)$, and the profile flow from every $\beta(0)\in(-b,b)$ converges to it.
+\end{theorem}
+
+The numerator of $\kappa$ measures how strongly the SUM rule classifies near-misses as Fault~1, and the denominator is the curvature of the base loss. The implicit function theorem follows the minimiser, a Schur complement isolates $\beta$, and the same Schur complement is the curvature of the profile loss that gives the basin in (ii) (\cref{app:thm4}); without noise, $\beta\to\infty$ (\cref{rem:hard}).
+
+Parts \ref{thm:attn}(d) and \ref{thm:soft}(ii) extend the analysis beyond uniform attention. With near-misses, every initialisation with $\beta(0)\ge0$ ends at an AND, never at the SUM or an OR, and for a small near-miss share every initialisation in a fixed interval $(-b,b)$, including OR-leaning ones, reaches the soft AND. Initialisations far on the OR side are discussed in \cref{rem:far}.
+
+\section{Experiments}\label{sec:exp}
+
+The predictions are tested on transformer detectors trained on raw windows: synthetic data (20 sensors, 48 steps; Fault~1 lowers three sensors by $2.5\sigma$) and the LBNL fan-coil unit \citep{granderson2023} (24 sensors, 48 steps of 15 minutes; Fault~1 is a fan-outlet blockage). The models (\cref{app:expdetails}) are a transformer with one token per sensor, self-attention \citep{vaswani2017} and attention pooling, and the same model without self-attention (\emph{attention pool}), which is the model of \cref{def:attn} with a learned embedding in place of the evidence. Each is trained on normal and Fault~1 windows (\emph{plain}) or with the three near-misses added (\emph{+NM}), at 1\% false alarms and with 3 seeds.
+
+\begin{table}[t]
+  \caption{Detection of Fault~1 (det.) and alarms on two-of-three look-alikes (2/3) at 1\% false alarms; mean of 3 seeds. \emph{law}: \cref{thm:sum}(ii) from each model's own detection rate. $\hat\beta$: learned inverse temperature of the attention pool.}\label{tab:main}
+  \vspace{-1mm}
+  \centering\footnotesize\setlength{\tabcolsep}{2.3pt}
+  \begin{tabular}{@{}lccc|cc|cc|cc@{}}
+    \toprule
+    & \multicolumn{5}{c|}{Synthetic} & \multicolumn{4}{c}{LBNL fan-coil}\\
+    & \multicolumn{3}{c|}{plain} & \multicolumn{2}{c|}{+NM} & \multicolumn{2}{c|}{plain} & \multicolumn{2}{c}{+NM}\\
+    Model & det. & 2/3 & law & det. & 2/3 & det. & 2/3 & det. & 2/3\\
+    \midrule
+    Transformer & .93 & .78 & .59 & .88 & \textbf{.15} & 1.00 & .99 & 1.00 & \textbf{.18}\\
+    Attention pool & .91 & .79 & .56 & .84 & \textbf{.11} & 1.00 & .98 & 1.00 & \textbf{.20}\\
+    AND rule (oracle) & .90 & .22 & -- & .88 & .20 & 1.00 & .33 & 1.00 & .31\\
+    \midrule
+    $\hat\beta$ (attention pool) & \multicolumn{5}{c|}{$-1.06\ \to\ +0.70$} & \multicolumn{4}{c}{$-1.02\ \to\ +0.69$}\\
+    \bottomrule
+  \end{tabular}
+  \vspace{-3mm}
+\end{table}
+
+After plain training both models detect Fault~1 and flag most two-of-three look-alikes (\cref{tab:main}). They lie about 0.2 above the law of \cref{thm:sum}(ii), with learned inverse temperature $\hat\beta=-1.06$: the OR regime of \cref{thm:attn}(c), since 17 of the 20 sensors lie outside the signature. With near-misses $\hat\beta$ becomes positive on both datasets, and in a near-miss window the sensor that did not shift receives 10.6 times the weight of the other two on synthetic data and at least 88 times on fan-coil data, against 0.14 and 0.01 without near-misses. Alarms on two-of-three look-alikes fall to 0.11--0.20, close to the AND oracle, and alarms on one-sensor and loud one-sensor look-alikes, which never appear in training, fall to 0.02--0.06. As the near-miss share $\rho$ grows, $\hat\beta$ increases and remains finite (\cref{fig:softand}), as \cref{thm:soft} predicts.
+
+\section{Conclusion}\label{sec:conc}
+
+The training data determine the logical form of a learned fault detector: normal-versus-fault data select the SUM, which no re-weighting makes valid against look-alikes, and near-misses move softmax attention to the AND. The analysis concerns a reduced attention model with Gaussian evidence and a known onset. The next steps are the full attention layer with learned queries and keys trained jointly with the head, near-misses in time for look-alikes that differ from the fault only in when the sensors shift, and validation on field data from several units.
+
+\section*{Software and Data}
+Code, configurations, reference results and the numerical checks are available at \url{https://github.com/chirag300/HVAC_Test}; the LBNL data are public \citep{granderson2023}. \Cref{app:repro} lists the commands.
+
+\bibliography{references}
+\bibliographystyle{icml2026}
+
+\newpage
+\appendix
+\onecolumn
+\input{appendix.tex}
+
+\end{document}

@@ -1,0 +1,200 @@
+\begin{thebibliography}{29}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Abbe et~al.(2023)Abbe, Bengio, Lotfi, and Rizk]{abbe2023}
+Abbe, E., Bengio, S., Lotfi, A., and Rizk, K.
+\newblock Generalization on the unseen, logic reasoning and degree curriculum.
+\newblock In \emph{Proceedings of the 40th International Conference on Machine
+  Learning}, volume 202 of \emph{Proceedings of Machine Learning Research},
+  pp.\  31--60, 2023.
+
+\bibitem[Andersen et~al.(2024)Andersen, Melgaard, Johra, Marszal-Pomianowska,
+  Jensen, and Heiselberg]{andersen2024}
+Andersen, K.~H., Melgaard, S.~P., Johra, H., Marszal-Pomianowska, A., Jensen,
+  R.~L., and Heiselberg, P.~K.
+\newblock Barriers and drivers for implementation of automatic fault detection
+  and diagnosis in buildings and {HVAC} systems: An outlook from industry
+  experts.
+\newblock \emph{Energy and Buildings}, 303:\penalty0 113801, 2024.
+
+\bibitem[Back~de Luca \& Fountoulakis(2026)Back~de Luca and
+  Fountoulakis]{backdeluca2026}
+Back~de Luca, A. and Fountoulakis, K.
+\newblock Certification from examples is hard for circuits and transformers
+  under minimal overparametrization.
+\newblock In \emph{Advances in Neural Information Processing Systems}, 2026.
+\newblock arXiv:2605.22964.
+
+\bibitem[Berger(1982)]{berger1982}
+Berger, R.~L.
+\newblock Multiparameter hypothesis testing and acceptance sampling.
+\newblock \emph{Technometrics}, 24\penalty0 (4):\penalty0 295--300, 1982.
+
+\bibitem[Bhattamishra et~al.(2023)Bhattamishra, Patel, Kanade, and
+  Blunsom]{bhattamishra2023}
+Bhattamishra, S., Patel, A., Kanade, V., and Blunsom, P.
+\newblock Simplicity bias in transformers and their ability to learn sparse
+  {B}oolean functions.
+\newblock In \emph{Proceedings of the 61st Annual Meeting of the Association
+  for Computational Linguistics}, pp.\  5767--5791, 2023.
+
+\bibitem[Danskin(1967)]{danskin1967}
+Danskin, J.~M.
+\newblock \emph{The Theory of Max-Min and its Application to Weapons Allocation
+  Problems}.
+\newblock Springer, Berlin, 1967.
+
+\bibitem[Edelman et~al.(2022)Edelman, Goel, Kakade, and Zhang]{edelman2022}
+Edelman, B.~L., Goel, S., Kakade, S., and Zhang, C.
+\newblock Inductive biases and variable creation in self-attention mechanisms.
+\newblock In \emph{Proceedings of the 39th International Conference on Machine
+  Learning}, volume 162 of \emph{Proceedings of Machine Learning Research},
+  pp.\  5793--5831, 2022.
+
+\bibitem[Geirhos et~al.(2020)Geirhos, Jacobsen, Michaelis, Zemel, Brendel,
+  Bethge, and Wichmann]{geirhos2020}
+Geirhos, R., Jacobsen, J.-H., Michaelis, C., Zemel, R., Brendel, W., Bethge,
+  M., and Wichmann, F.~A.
+\newblock Shortcut learning in deep neural networks.
+\newblock \emph{Nature Machine Intelligence}, 2\penalty0 (11):\penalty0
+  665--673, 2020.
+
+\bibitem[Gertler(1998)]{gertler1998}
+Gertler, J.
+\newblock \emph{Fault Detection and Diagnosis in Engineering Systems}.
+\newblock Marcel Dekker, New York, 1998.
+
+\bibitem[Goldman \& Kearns(1995)Goldman and Kearns]{goldman1995}
+Goldman, S.~A. and Kearns, M.~J.
+\newblock On the complexity of teaching.
+\newblock \emph{Journal of Computer and System Sciences}, 50\penalty0
+  (1):\penalty0 20--31, 1995.
+
+\bibitem[Granderson et~al.(2023)Granderson, Lin, Chen, Casillas, Wen, Chen, Im,
+  Huang, and Ling]{granderson2023}
+Granderson, J., Lin, G., Chen, Y., Casillas, A., Wen, J., Chen, Z., Im, P.,
+  Huang, S., and Ling, J.
+\newblock A labeled dataset for building {HVAC} systems operating in faulted
+  and fault-free states.
+\newblock \emph{Scientific Data}, 10:\penalty0 342, 2023.
+
+\bibitem[Hermann et~al.(2024)Hermann, Mobahi, Fel, and Mozer]{hermann2024}
+Hermann, K.~L., Mobahi, H., Fel, T., and Mozer, M.~C.
+\newblock On the foundations of shortcut learning.
+\newblock In \emph{International Conference on Learning Representations}, 2024.
+
+\bibitem[House et~al.(2001)House, Vaezi-Nejad, and Whitcomb]{house2001}
+House, J.~M., Vaezi-Nejad, H., and Whitcomb, J.~M.
+\newblock An expert rule set for fault detection in air-handling units.
+\newblock \emph{ASHRAE Transactions}, 107\penalty0 (1), 2001.
+
+\bibitem[Hu et~al.(2025)Hu, Zhang, Su, Song, and Liu]{hu2025}
+Hu, J. Y.-C., Zhang, X., Su, M., Song, Z., and Liu, H.
+\newblock Minimalist softmax attention provably learns constrained {B}oolean
+  functions.
+\newblock \emph{arXiv preprint arXiv:2505.19531}, 2025.
+
+\bibitem[Katipamula \& Brambley(2005{\natexlab{a}})Katipamula and
+  Brambley]{katipamula2005a}
+Katipamula, S. and Brambley, M.~R.
+\newblock Methods for fault detection, diagnostics, and prognostics for
+  building systems---a review, part {I}.
+\newblock \emph{HVAC\&R Research}, 11\penalty0 (1):\penalty0 3--25,
+  2005{\natexlab{a}}.
+
+\bibitem[Katipamula \& Brambley(2005{\natexlab{b}})Katipamula and
+  Brambley]{katipamula2005b}
+Katipamula, S. and Brambley, M.~R.
+\newblock Methods for fault detection, diagnostics, and prognostics for
+  building systems---a review, part {II}.
+\newblock \emph{HVAC\&R Research}, 11\penalty0 (2):\penalty0 169--187,
+  2005{\natexlab{b}}.
+
+\bibitem[Kim \& Katipamula(2018)Kim and Katipamula]{kim2018}
+Kim, W. and Katipamula, S.
+\newblock A review of fault detection and diagnostics methods for building
+  systems.
+\newblock \emph{Science and Technology for the Built Environment}, 24\penalty0
+  (1):\penalty0 3--21, 2018.
+
+\bibitem[Kingma \& Ba(2015)Kingma and Ba]{kingma2015}
+Kingma, D.~P. and Ba, J.
+\newblock Adam: A method for stochastic optimization.
+\newblock In \emph{International Conference on Learning Representations}, 2015.
+
+\bibitem[Lehmann \& Romano(2005)Lehmann and Romano]{lehmann2005}
+Lehmann, E.~L. and Romano, J.~P.
+\newblock \emph{Testing Statistical Hypotheses}.
+\newblock Springer, New York, 3rd edition, 2005.
+
+\bibitem[Lippl \& Stachenfeld(2025)Lippl and Stachenfeld]{lippl2025}
+Lippl, S. and Stachenfeld, K.
+\newblock When does compositional structure yield compositional generalization?
+  {A} kernel theory.
+\newblock In \emph{International Conference on Learning Representations}, 2025.
+
+\bibitem[Neyman \& Pearson(1933)Neyman and Pearson]{neyman1933}
+Neyman, J. and Pearson, E.~S.
+\newblock On the problem of the most efficient tests of statistical hypotheses.
+\newblock \emph{Philosophical Transactions of the Royal Society of London,
+  Series A}, 231:\penalty0 289--337, 1933.
+
+\bibitem[Rudin(1976)]{rudin1976}
+Rudin, W.
+\newblock \emph{Principles of Mathematical Analysis}.
+\newblock McGraw-Hill, New York, 3rd edition, 1976.
+
+\bibitem[Shah et~al.(2020)Shah, Tamuly, Raghunathan, Jain, and
+  Netrapalli]{shah2020}
+Shah, H., Tamuly, K., Raghunathan, A., Jain, P., and Netrapalli, P.
+\newblock The pitfalls of simplicity bias in neural networks.
+\newblock In \emph{Advances in Neural Information Processing Systems},
+  volume~33, pp.\  9573--9585, 2020.
+
+\bibitem[Tarzanagh et~al.(2023)Tarzanagh, Li, Zhang, and Oymak]{tarzanagh2023}
+Tarzanagh, D.~A., Li, Y., Zhang, X., and Oymak, S.
+\newblock Max-margin token selection in attention mechanism.
+\newblock In \emph{Advances in Neural Information Processing Systems},
+  volume~36, 2023.
+
+\bibitem[Vaswani et~al.(2017)Vaswani, Shazeer, Parmar, Uszkoreit, Jones, Gomez,
+  Kaiser, and Polosukhin]{vaswani2017}
+Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A.~N.,
+  Kaiser, {\L}., and Polosukhin, I.
+\newblock Attention is all you need.
+\newblock In \emph{Advances in Neural Information Processing Systems},
+  volume~30, pp.\  5998--6008, 2017.
+
+\bibitem[Venkatasubramanian et~al.(2003)Venkatasubramanian, Rengaswamy, Yin,
+  and Kavuri]{venkat2003}
+Venkatasubramanian, V., Rengaswamy, R., Yin, K., and Kavuri, S.~N.
+\newblock A review of process fault detection and diagnosis, part {I}:
+  Quantitative model-based methods.
+\newblock \emph{Computers \& Chemical Engineering}, 27\penalty0 (3):\penalty0
+  293--311, 2003.
+
+\bibitem[Wang et~al.(2024)Wang, Wei, Hsu, and Lee]{wang2024}
+Wang, Z., Wei, S., Hsu, D., and Lee, J.~D.
+\newblock Transformers provably learn sparse token selection while
+  fully-connected nets cannot.
+\newblock In \emph{Proceedings of the 41st International Conference on Machine
+  Learning}, volume 235 of \emph{Proceedings of Machine Learning Research},
+  2024.
+
+\bibitem[Winston(1970)]{winston1970}
+Winston, P.~H.
+\newblock \emph{Learning Structural Descriptions from Examples}.
+\newblock PhD thesis, Massachusetts Institute of Technology, 1970.
+
+\bibitem[Zhao et~al.(2019)Zhao, Li, Zhang, and Zhang]{zhao2019}
+Zhao, Y., Li, T., Zhang, X., and Zhang, C.
+\newblock Artificial intelligence-based fault detection and diagnosis methods
+  for building energy systems: Advantages, challenges and the future.
+\newblock \emph{Renewable and Sustainable Energy Reviews}, 109:\penalty0
+  85--101, 2019.
+
+\end{thebibliography}

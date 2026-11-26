@@ -15,7 +15,7 @@ and the fault deviation D = faulty - normal, aligned sample-for-sample. That let
     how often it is flagged as the target, bucketed by how many signature channels it moves
 
 Schema-agnostic: the timestamp column, numeric channels and fault-free file(s) are detected
-automatically. Check the detection with  `python run_real.py --data ... --inspect`.
+automatically.
 """
 import hashlib
 import json
@@ -470,8 +470,8 @@ class LBNLSource:
             json.dump({"channels": self.channel_names, "fault_free": self.normals,
                        "pairing": self.pair, "families": self.family, "target": self.sig_info,
                        "signed_deviation_on_target_signature": ov}, fh, indent=1)
-        lines = ["Top target candidates (more partial-overlap families = closer to the slide's "
-                 "'other faults look like part of the capacitor pattern' assumption):"]
+        lines = ["Top target candidates (more partial-overlap families = more other faults that "
+                 "reproduce part of the target's signature):"]
         for r in self.ranking[:15]:
             fb = "" if r["strict_signature"] else "  [fallback signature]"
             lines.append(f"  {r['fault'][:45]:45s} k={r['k']} partial-overlap families="

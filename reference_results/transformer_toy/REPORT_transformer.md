@@ -1,4 +1,4 @@
-# Transformer tests — toy (slide 7 replica)
+# Transformer tests — synthetic
 
 Signature: ['ch0', 'ch1', 'ch2']; seeds [0, 1, 2]; n_train 4000, n_test 1000; thresholds at 1% false alarms on held-out normal windows.
 Entries are mean±sd over seeds.

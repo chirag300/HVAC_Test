@@ -1,0 +1,158 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{booktabs}
+\usepackage[round]{natbib}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+\usepackage[capitalize,noabbrev]{cleveref}
+
+\linespread{1.12}
+\setlength{\parskip}{3pt}
+\setlength{\jot}{6pt}
+\numberwithin{equation}{section}
+
+\theoremstyle{plain}
+\newtheorem{proposition}{Proposition}
+\newtheorem{fact}{Fact}
+
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\one}{\mathbf{1}}
+\newcommand{\step}[1]{\par\medskip\noindent\textbf{#1}\ }
+
+\title{Which Near-Misses Are Enough\\[4pt]\large Supplementary propositions to ``Sum Instead of AND''}
+\author{Chirag Seth\\University of Waterloo}
+\date{November 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This note collects the results on the choice and number of near-misses that were removed from the CS~886 report ``Sum Instead of AND''. \Cref{prop:nm} shows that the $k$ channel near-misses identify the AND among monotone rules, that simultaneity is identified by the $\binom k2$ pair-staggered near-misses and not by fully staggered ones, and it gives matching upper and lower bounds on the number of near-misses of each type. \Cref{prop:norm,prop:md} explain, for two-layer ReLU networks and for minimum-degree interpolators, why normal-versus-fault training produces an additive rule and what near-misses change. \Cref{sec:timing} reports the timing experiments that accompany \cref{prop:nm}(b). Notation follows the report.
+\end{abstract}
+
+\section{Channels, timing and sample counts}\label{sec:prop}
+
+The near-misses $\mu^{(j)}=\delta(\one_S-e_j)$ are the members of the deployment null hypothesis closest to Fault~1. The first result makes precise that they carry all the information about the AND that a detector needs, for the channels that shifted and for the times at which they shifted, and counts how many examples of each type are needed.
+
+\begin{proposition}[Which near-misses, and how many]\label{prop:nm}
+(a) \emph{Channels.} Among rules $h:2^S\to\{0,1\}$ that are monotone in the set $A$ of shifted sensors ($A\subseteq B\Rightarrow h(A)\le h(B)$), a labelled set identifies the AND rule $\one\{A=S\}$ if and only if it contains $S$, labelled positive, and all $k$ channel near-misses $S\setminus\{j\}$, labelled negative.
+
+(b) \emph{Timing.} Half-open intervals on a line have a common point if and only if every pair of them overlaps. Hence ``all $k$ sensors shifted at the same time'' means ``the pairwise-overlap graph of the shift intervals is complete''. Among rules that are monotone in this graph, a labelled set identifies simultaneity if and only if it contains the $\binom k2$ pair-staggered near-misses, in which exactly one pair never overlaps. Fully staggered negatives do not identify it when $k\ge3$.
+
+(c) \emph{Counts.} Suppose a near-miss of type $j$ leaves sensor $j$ at an unknown mean level $\nu_j$ with noise $\sigma_j$, at a gap of $D_j$ noise units below the Fault~1 level, and the goal is a threshold on sensor $j$ that is valid against this near-miss and whose power is within $\gamma$ of the best valid power $\Phi(D_j-z_\alpha)$. Let
+\begin{equation}\label{eq:slack}
+  s_j=\sigma_j\Big[(D_j-z_\alpha)-\Phi^{-1}\big(\Phi(D_j-z_\alpha)-\gamma\big)\Big]\approx\frac{\sigma_j\gamma}{\varphi(D_j-z_\alpha)}.
+\end{equation}
+Any learner needs $n_j\ge\frac{2\sigma_j^2}{s_j^2}\log\frac1{4\eta}$ examples of that type to succeed with probability $1-\eta$, and the intersection--union learner succeeds on all $k$ types with $n_j\ge\frac{8\sigma_j^2}{s_j^2}\log\frac{2k}{\eta}$.
+\end{proposition}
+
+Part (a) states that the $k$ near-misses suffice for every partial look-alike, of any size, because a monotone rule that rejects $S\setminus\{j\}$ also rejects every subset of it. Part (b) gives the analogue for timing. Part (c) shows that sensors with a small gap $D_j$ need many more near-misses, since the slack $s_j$ shrinks with $\varphi(D_j-z_\alpha)$. For example, with $\alpha=0.01$, $\gamma=0.05$, $\eta=0.05$ and $k=3$, a gap of $D_j=4$ noise units gives a lower bound of 23 and an upper bound of 272 examples per type, and a gap of $D_j=3$ gives 144 and 1{,}702.
+
+The proof of the lower bound uses the following inequality.
+
+\begin{fact}[Bretagnolle--Huber inequality; \citealp{bretagnolle1979}; \citealp{tsybakov2009}, Lemma~2.6]\label{fact:bh}
+For probability laws $P,Q$ and any event $A$, $P(A)+Q(A^c)\ge\frac12e^{-\mathrm{KL}(P\|Q)}$.
+\end{fact}
+
+\begin{proof}[Proof of \cref{prop:nm}]
+\step{Part (a), sufficiency.} Suppose $h$ is monotone, $h(S)=1$ and $h(S\setminus\{j\})=0$ for every $j$. Any $A\ne S$ misses some $j$, so $A\subseteq S\setminus\{j\}$, and monotonicity gives $h(A)\le h(S\setminus\{j\})=0$. Hence $h(A)=\one\{A=S\}$.
+
+\step{Part (a), necessity.} If some $S\setminus\{i\}$ is not labelled, the rule $h_i(A)=\one\{A\supseteq S\setminus\{i\}\}$ is monotone, agrees with every label that is present, and differs from the AND rule at $S\setminus\{i\}$, so the labelled set does not identify the AND rule.
+
+\step{Part (b).} If the intervals $I_i=[l_i,u_i)$ pairwise intersect, then $l_i<u_j$ for all $i,j$, so $[\max_il_i,\ \min_ju_j)$ is non-empty and contained in every $I_i$; the converse is immediate. Simultaneity is therefore the statement that the overlap graph is the complete graph $K_k$, and the argument of part (a) applies with the edges of the graph in place of the sensors. Each pair-staggered pattern $K_k$ minus the edge $\{a,b\}$ is realised by intervals of equal length, for example $I_a=[0,1)$, $I_b=[1,2)$ and $I_j=[\frac12,\frac32)$ for $j\ne a,b$. Fully staggered negatives have the empty graph, the bottom of the order. For $k\ge3$, each rule $\one\{\mathcal G\supseteq K_k\setminus\{a,b\}\}$ labels them $0$ and $K_k$ as $1$, yet differs from simultaneity, so they do not identify it.
+
+\step{Part (c), the gap between valid and powerful thresholds.} A threshold $c_j$ on sensor $j$ is valid against the near-miss if $c_j\ge\nu_j+\sigma_jz_\alpha$, and the ideal valid threshold $\nu_j+\sigma_jz_\alpha$ has power $\Phi(D_j-z_\alpha)$. A threshold that exceeds the ideal one by $e\ge0$ has power $\Phi(D_j-z_\alpha-e/\sigma_j)$, so the power loss is at most $\gamma$ exactly when $e\le s_j$.
+
+\step{Part (c), upper bound.} The intersection--union learner estimates $\nu_j$ by the sample mean $\bar X_j\sim N(\nu_j,\sigma_j^2/n)$ of the $n$ examples of type $j$ and sets
+\begin{equation}\label{eq:learner}
+  c_j=\bar X_j+\sigma_jz_\alpha+\sigma_jt_n,
+  \qquad
+  t_n=\sqrt{2\log(2k/\eta)/n}.
+\end{equation}
+By the Gaussian tail bound $2\Phi(-x)\le e^{-x^2/2}$ and a union bound over the $k$ types, $|\bar X_j-\nu_j|\le\sigma_jt_n$ for every $j$ with probability at least $1-\eta$. On this event $c_j\ge\nu_j+\sigma_jz_\alpha$, so every threshold is valid, and $c_j$ exceeds the ideal threshold by at most $2\sigma_jt_n$, which is at most $s_j$ when
+\begin{equation}\label{eq:upper}
+  \boxed{\;n\ge\frac{8\sigma_j^2}{s_j^2}\log\frac{2k}{\eta}.\;}
+\end{equation}
+
+\step{Part (c), lower bound.} Consider two levels $\nu_0$ and $\nu_1=\nu_0+s_j+\xi$ with $\xi>0$. Success at $\nu_1$ requires $c_j\ge\nu_1+\sigma_jz_\alpha$, and success at $\nu_0$ requires $c_j\le\nu_0+\sigma_jz_\alpha+s_j<\nu_1+\sigma_jz_\alpha$. The events are disjoint, so a learner that succeeds with probability $1-\eta$ under both levels yields a test between them with both errors at most $\eta$. The two data laws have $\mathrm{KL}=n(s_j+\xi)^2/(2\sigma_j^2)$, and \cref{fact:bh} gives
+\begin{equation}\label{eq:bh}
+  2\eta\ \ge\ \frac12\exp\Big(-\frac{n(s_j+\xi)^2}{2\sigma_j^2}\Big),
+  \qquad\text{that is}\qquad
+  \boxed{\;n\ge\frac{2\sigma_j^2}{(s_j+\xi)^2}\log\frac1{4\eta}.\;}
+\end{equation}
+Letting $\xi\to0$ gives the claim.
+\end{proof}
+
+Part (a) is the teaching set of a monotone conjunction in the sense of \citet{goldman1995}, and near-misses as teaching examples go back to \citet{winston1970}; parts (b) and (c) are new.
+
+\section{Two model classes}\label{sec:models}
+
+The next two results concern two other model classes. They show why normal-versus-fault training produces an additive rule and what near-misses change.
+
+\begin{proposition}[Norm cost of rejecting near-misses]\label{prop:norm}
+Let windows carry the shift $\delta$ on a block $B$ of $L$ time steps on the $k$ signature sensors, with normal prototype $x_0$, Fault~1 prototype $x_+$ and channel near-misses $x^{(j)}$. Let $f$ be a two-layer ReLU network with path norm $R=\sum_i|v_i|\|w_i\|_2$, and write $G=f(x_+)-f(x_0)>0$, $\Delta=\|x_+-x_0\|=\delta\sqrt{kL}$ and $R_{\min}=G/\Delta$. If $f(x_+)-f(x^{(j)})\ge\gamma$ for every $j$, then $R\ge k\frac{\gamma}{G}R_{\min}$, and this is attained. If $\mathrm{Lip}(f)=\kappa_fG/\Delta$, every near-miss scores at least a fraction $1-\kappa_f/\sqrt k$ of the way from normal to Fault~1.
+\end{proposition}
+
+\begin{proof}
+For the second claim, $\|x^{(j)}-x_+\|=\delta\sqrt L$, so
+\begin{equation}\label{eq:lip}
+  f(x^{(j)})\ \ge\ f(x_+)-\mathrm{Lip}(f)\,\delta\sqrt L\ =\ f(x_+)-\frac{\kappa_fG}{\sqrt k}.
+\end{equation}
+For the first, each unit changes by at most $\delta\sum_{t\in B}|w_{i,tj}|$ between $x_+$ and $x^{(j)}$, because the ReLU is 1-Lipschitz. Summing over the units and over $j$,
+\begin{equation}\label{eq:pathnorm}
+  k\gamma\ \le\ \delta\sum_i|v_i|\,\|w_{i,B\times S}\|_1\ \le\ \delta\sqrt{kL}\,R ,
+\end{equation}
+so $\boxed{R\ge k\gamma/\Delta=k\frac{\gamma}{G}R_{\min}}$. The one-unit network $v\,\mathrm{relu}\big(\one_{B\times S}^\top x/L-(k-1)\delta\big)$ with $x_0=0$ has $G=\gamma=v\delta$ and $R=v\sqrt{kL}/L$, which attains the bound.
+\end{proof}
+
+\begin{proposition}[Minimum-degree interpolators]\label{prop:md}
+On sensor bits $x\in\{\pm1\}^k$, the minimum-degree interpolator \citep{abbe2023} of $\{(-\one,-1),(\one,+1)\}$ is $\frac1k\sum_jx_j$, a SUM. With the $k$ channel near-misses $(\one-2e_j,-1)$ added, it is
+\begin{equation}\label{eq:md}
+  \boxed{\;q(x)=\frac{\big(\sum_jx_j+1\big)^2-k^2-1}{2k},\;}
+\end{equation}
+of degree $2$, with $q(\one)=1$ and $q\le-1$ elsewhere, so $\operatorname{sign}q$ is the AND on all $2^k$ points.
+\end{proposition}
+
+\begin{proof}
+A function of degree $0$ cannot fit two different labels. A function $c_\emptyset+\sum_ic_ix_i$ of degree at most $1$ fits the first set if and only if $c_\emptyset=0$ and $\sum_ic_i=1$, and the smallest energy $\sum_ic_i^2$ is attained at $c_i=\frac1k$. With the near-misses, degree $1$ would need $f(\one)-f(\one-2e_j)=2c_j=2$, so $c_j=1$ for every $j$; then $c_\emptyset=f(\one)-k=1-k$ and $f(-\one)=1-2k\ne-1$ for $k\ge2$. The minimum degree is therefore $2$. The data are invariant under permutations of the sensors and the energy is strictly convex, so the minimiser is symmetric, that is, a quadratic in $s=\sum_jx_j$, fixed by its values $1,-1,-1$ at the three distinct points $s=k,\ k-2,\ -k$. Away from Fault~1, $-k\le s\le k-2$, so $(s+1)^2\le(k-1)^2$ and $q\le-1$.
+\end{proof}
+
+\section{Timing experiments}\label{sec:timing}
+
+The evidence vector of the report records how much each sensor shifted but not when, so channel near-misses do not teach simultaneity. On the fan-coil unit, models trained with channel near-misses still flag 0.49--0.58 of staggered windows, against 0.29 for the AND rule. \Cref{prop:nm}(b) prescribes pair-staggered near-misses, in which every signature sensor shifts but exactly one pair never overlaps in time. The experiments below use the models, data and protocol of the report. The training set \emph{+NM+PS} contains 1{,}000 channel and 1{,}000 pair-staggered near-misses, and \emph{+NM+PS+H} adds 1{,}000 \emph{short Fault~1} windows, in which all signature sensors shift together for the pair-staggered duration and carry the Fault~1 label. All entries are fractions of windows that raise an alarm at 1\% false alarms, averaged over three seeds.
+
+\begin{table}[h]\centering\footnotesize\setlength{\tabcolsep}{2.6pt}
+\renewcommand{\arraystretch}{1.15}
+\caption{Synthetic data: timing near-misses and the duration control.}\label{tab:timing}
+\begin{tabular}{@{}lcccc|cccc@{}}\toprule
+ & \multicolumn{4}{c|}{+NM+PS} & \multicolumn{4}{c}{+NM+PS+H}\\
+Model & Fault 1 & short Fault 1 & pair-stag. & staggered & Fault 1 & short Fault 1 & pair-stag. & staggered\\\midrule
+Transformer & 0.88 & 0.12 & 0.04 & 0.05 & 0.81 & 0.91 & 0.03 & 0.05\\
+Attention pool & 0.80 & 0.03 & 0.02 & 0.03 & 0.75 & 0.87 & 0.07 & 0.07\\
+\midrule
+AND rule (oracle) & 0.89 & 0.73 & 0.30 & 0.08 & 0.88 & 0.73 & 0.29 & 0.08\\
+\bottomrule\end{tabular}\end{table}
+
+\begin{table}[h]\centering\footnotesize\setlength{\tabcolsep}{2.6pt}
+\renewcommand{\arraystretch}{1.15}
+\caption{LBNL fan-coil unit: timing near-misses and the duration control.}\label{tab:fcu-timing}
+\begin{tabular}{@{}lcccc|cccc@{}}\toprule
+ & \multicolumn{4}{c|}{+NM+PS} & \multicolumn{4}{c}{+NM+PS+H}\\
+Model & Fault 1 & short Fault 1 & pair-stag. & staggered & Fault 1 & short Fault 1 & pair-stag. & staggered\\\midrule
+Transformer & 1.00 & 0.62 & 0.11 & 0.18 & 0.99 & 0.89 & 0.02 & 0.09\\
+Attention pool & 0.99 & 0.44 & 0.15 & 0.23 & 0.99 & 0.88 & 0.15 & 0.32\\
+\midrule
+AND rule (oracle) & 1.00 & 0.94 & 0.80 & 0.29 & 1.00 & 0.94 & 0.79 & 0.29\\
+\bottomrule\end{tabular}\end{table}
+
+Pair-staggered windows shift each sensor for a shorter time than Fault~1, so a detector can reject them by their duration instead of by whether the sensors shifted together. Trained with channel and pair-staggered near-misses, both models reject pair-staggered windows (0.02--0.15) but also reject short true faults (0.03--0.62), which the oracle AND flags in 0.73--0.94 of windows: the models learn duration. Adding duration-matched positives restores short-fault detection (0.87--0.91) while pair-staggered windows stay low (0.02--0.15). Pair-staggered near-misses therefore teach simultaneity, as \cref{prop:nm}(b) allows, only once duration is matched, which illustrates that a near-miss must differ from Fault~1 in exactly one respect. The learned inverse temperature of the attention pool remains positive in both settings, at $0.34$ and $0.49$ on synthetic data and $0.65$ and $0.72$ on fan-coil data.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}
