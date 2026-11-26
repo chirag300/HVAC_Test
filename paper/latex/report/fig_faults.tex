@@ -1,0 +1,25 @@
+\begin{tikzpicture}[x=1mm,y=1mm,
+    faultbase/.style={rounded corners=2pt,minimum width=30mm,minimum height=7mm,align=center,font=\small},
+    faultN/.style={faultbase,draw=Navy,fill=Navy!10},
+    faultR/.style={faultbase,draw=Red,fill=Red!10},
+    faultM/.style={faultbase,draw=Muted,fill=Muted!10},
+    sensor/.style={circle,draw=Navy,fill=white,minimum size=8mm,inner sep=0pt,font=\small},
+    lbl/.style={font=\footnotesize,color=Muted,anchor=west}]
+  % faults
+  \node[faultN,font=\small\bfseries] (f1) at (0,30) {Fault 1 (target)};
+  \node[faultR] (f2) at (0,20) {Fault 2};
+  \node[faultR] (f3) at (0,10) {Fault 3};
+  \node[faultM] (f4) at (0,0) {sensor drift};
+  % sensors
+  \foreach \i/\y/\name in {1/37.5/water flow,2/30/valve position,3/22.5/water temperature,4/15/air temperature,5/7.5/fan speed,6/0/air pressure}{
+    \node[sensor] (s\i) at (55,\y) {$s_{\i}$};
+    \node[lbl] at (60,\y) {\name};
+  }
+  % edges
+  \foreach \s in {1,2,3}{\draw[Navy,very thick] (f1.east) -- (s\s.west);}
+  \foreach \s in {1,2}{\draw[Red,thick,dashed] (f2.east) -- (s\s.west);}
+  \foreach \s in {3,4}{\draw[Red,thick,dashed] (f3.east) -- (s\s.west);}
+  \draw[Muted,thick,dotted] (f4.east) -- (s2.west);
+  \node[font=\footnotesize\bfseries,color=Navy] at (0,38) {conditions};
+  \node[font=\footnotesize\bfseries,color=Navy] at (55,44) {sensors};
+\end{tikzpicture}
