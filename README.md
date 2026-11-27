@@ -5,7 +5,7 @@ Code, reference results and the paper for the final project of **CS 886: Learnin
 
 > Chirag Seth. *Sum Instead of AND: Why Fault Detectors Flag Look-Alikes, and How Near-Misses Teach
 > Attention the Conjunction.* CS 886 final project report, 2026.
-> [`paper/Seth_CS886_report.pdf`](paper/Seth_CS886_report.pdf)
+> [`paper/Seth_CS886_report_source.pdf`](paper/Seth_CS886_report_source.pdf)
 
 A fault detector is usually trained to separate normal operation from one target fault (Fault 1), but
 in service it also meets *look-alikes*: other conditions that shift only part of Fault 1's sensors. The
@@ -49,7 +49,8 @@ framework.
 │   └── transformer_fcu/        LBNL fan-coil unit, Fault 1 = FCU_FanOutletBlockage, 3 seeds (same files)
 │
 └── paper/
-    ├── Seth_CS886_report.pdf                   the report (ICML 2026 template, 3 pages + appendix)
+    ├── Seth_CS886_report_source.pdf            the report (ICML 2026 template, 3 pages + appendix)
+    ├── Seth_CS886_report.pdf                   an earlier build of the report
     ├── Seth_CS886_near_miss_propositions.pdf   companion note: which near-misses, and how many
     ├── Seth_CS886_slides.pdf                   presentation slides
     └── latex/                                  LaTeX sources of the report, the note and the slides
